@@ -72,6 +72,7 @@ body {
     color: var(--text-color);
     line-height: 1.6;
     background-image: radial-gradient(circle, #fff9fb 15%, #f8e4ed 85%);
+    position: relative;
 }
 
 .container {
@@ -135,6 +136,8 @@ body {
     margin-bottom: 5px;
     animation: fadeInUp 0.5s ease-out;
     animation-fill-mode: both;
+    position: relative;
+    z-index: 1;
 }
 
 .form-group:nth-child(1) { animation-delay: 0.1s; }
@@ -425,4 +428,103 @@ select.form-control {
 
 .field-focused {
     transform: scale(1.02);
+}
+
+.select-dropdown {
+    position: relative;
+    width: 100%;
+    z-index: 50;
+}
+
+.select-input {
+    position: relative;
+}
+
+.select-input input {
+    width: 100%;
+    padding: 12px 15px;
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 16px;
+    transition: all 0.3s ease;
+    background-color: #fff;
+    cursor: pointer;
+}
+
+.select-input input:focus {
+    border-color: var(--primary-color);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(139, 6, 72, 0.2);
+    transform: translateY(-2px);
+}
+
+.dropdown-icon {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--primary-color);
+    pointer-events: none;
+}
+
+.dropdown-options {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    max-height: 200px;
+    overflow-y: auto;
+    background: white;
+    border: 2px solid var(--border-color);
+    border-top: none;
+    border-radius: 0 0 8px 8px;
+    z-index: 1001;
+    box-shadow: 0 5px 15px var(--shadow-color);
+    display: none;
+}
+
+.dropdown-options li {
+    padding: 10px 15px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.dropdown-options li:hover {
+    background-color: var(--accent-color);
+}
+
+.hidden-select {
+    display: none;
+}
+
+.select-dropdown.active {
+    z-index: 1000;
+}
+
+.active .dropdown-options {
+    display: block !important;
+}
+
+/* Ensure form groups don't interfere unnecessarily unless active */
+.form-group {
+    position: relative;
+    z-index: 1;
+}
+
+/* When a dropdown inside is active, raise the form group's z-index */
+.form-group.dropdown-active {
+    z-index: 999;
+}
+
+/* Utility class to hide elements */
+.hidden-by-default {
+    display: none;
+    /* Optionally add transition for smoother appearance */
+    /* opacity: 0; */
+    /* transition: opacity 0.3s ease-in-out, display 0s linear 0.3s; */
+}
+
+.hidden-by-default.visible {
+    display: block;
+    /* opacity: 1; */
+    /* transition: opacity 0.3s ease-in-out; */
 }
