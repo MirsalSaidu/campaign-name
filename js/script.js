@@ -128,33 +128,109 @@ document.addEventListener('DOMContentLoaded', function() {
         'OCT': 'Q4', 'NOV': 'Q4', 'DEC': 'Q4'
     };
 
-    // Elements
+    // Elements (ensure these are defined before use)
     const brandSelect = document.getElementById('brand');
     const facilitySelect = document.getElementById('facility');
     const monthSelect = document.getElementById('month');
     const quarterSelect = document.getElementById('quarter');
-    const specialtySelect = document.getElementById('specialty');
+    const yearSelect = document.getElementById('year'); // Get year select
+    const specialtySelect = document.getElementById('specialty'); // Hidden select
+    const specialtySearch = document.getElementById('specialty-search'); // Input field
+    const specialtyOptions = document.getElementById('specialty-options'); // UL for dropdown list
+    const selectDropdown = specialtySearch.closest('.select-dropdown'); // Container div
+    const specialtyFormGroup = specialtySearch.closest('.form-group'); // Parent form-group
+    
+    const serviceTypeSelect = document.getElementById('serviceType'); // Service Type select
+    const objectiveSelect = document.getElementById('objective'); // Objective select
+    const ctaSelect = document.getElementById('cta'); // CTA select
+    const regionSelect = document.getElementById('region'); // Region select
+    const variantSelect = document.getElementById('variant'); // Variant select
+
+    // Dynamic Detail Field Elements
+    const dynamicDetailGroup = document.getElementById('dynamicDetailGroup'); // Get the form group
+    const dynamicDetailLabel = document.getElementById('dynamicDetailLabel');
+    const dynamicDetailInput = document.getElementById('dynamicDetailInput');
+
     const generateBtn = document.getElementById('generate');
     const resetBtn = document.getElementById('reset');
     const copyBtn = document.getElementById('copy');
     const resultContainer = document.querySelector('.result-container');
     const resultElement = document.getElementById('result');
 
-    // Populate specialty dropdown
+    // --- Populate Specialty Dropdown ---
+    specialtyOptions.innerHTML = ''; // Clear visible list first
+    // Ensure hidden select is also clear if needed, though typically populated once
+    // specialtySelect.innerHTML = '<option value="">Select Specialty</option>'; 
+
     specialties.forEach(specialty => {
+        // Add to hidden select
         const option = document.createElement('option');
         option.value = specialty.code;
         option.textContent = `${specialty.code} - ${specialty.name}`;
         specialtySelect.appendChild(option);
+        
+        // Add to visible dropdown list (UL)
+        const li = document.createElement('li');
+        li.dataset.value = specialty.code;
+        li.textContent = `${specialty.code} - ${specialty.name}`;
+        
+        // Add click listener *directly* here after creating the li
+        li.addEventListener('click', function() {
+            const value = this.dataset.value;
+            const text = this.textContent;
+            specialtySearch.value = text; // Set input value
+            specialtySelect.value = value; // Set hidden select value
+            closeAllDropdowns(); // Close the dropdown
+        });
+        
+        specialtyOptions.appendChild(li); // Append to the visible list
+    });
+    // --- End Specialty Population ---
+
+    // --- Event Listeners (Should come after element definitions and population) ---
+
+    // Update Dynamic Detail Field based on Service Type
+    serviceTypeSelect.addEventListener('change', function() {
+        const selectedType = this.value;
+        
+        // Hide or show the dynamic field group
+        if (selectedType) {
+            dynamicDetailGroup.classList.remove('hidden-by-default');
+             dynamicDetailGroup.classList.add('visible');
+        } else {
+            dynamicDetailGroup.classList.add('hidden-by-default');
+             dynamicDetailGroup.classList.remove('visible');
+            dynamicDetailLabel.textContent = 'Description';
+            dynamicDetailInput.placeholder = 'Enter description';
+            dynamicDetailInput.value = '';
+            dynamicDetailInput.classList.remove('is-invalid');
+            return;
+        }
+
+        // Update label and placeholder based on selected type
+        switch (selectedType) {
+            case 'DOC':
+                dynamicDetailLabel.textContent = 'Doctor Name';
+                dynamicDetailInput.placeholder = 'Enter Doctor Name';
+                break;
+            case 'SVC':
+                dynamicDetailLabel.textContent = 'Service Name';
+                dynamicDetailInput.placeholder = 'Enter Service Name';
+                break;
+            case 'PROD':
+                dynamicDetailLabel.textContent = 'Product Name';
+                dynamicDetailInput.placeholder = 'Enter Product Name';
+                break;
+        }
+        
+        dynamicDetailInput.value = '';
+        dynamicDetailInput.classList.remove('is-invalid');
     });
 
     // Populate facility dropdown based on brand selection
     brandSelect.addEventListener('change', function() {
         const brandValue = this.value;
-        
-        // Clear existing options
         facilitySelect.innerHTML = '<option value="">Select Facility</option>';
-        
         if (brandValue && facilities[brandValue]) {
             facilities[brandValue].forEach(facility => {
                 const option = document.createElement('option');
@@ -174,25 +250,38 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Add animation effects to form controls
-    const formControls = document.querySelectorAll('.form-control');
+    const formControls = document.querySelectorAll('.form-control:not(#specialty), #specialty-search'); 
     formControls.forEach(control => {
         // Add focus effects
         control.addEventListener('focus', function() {
-            this.closest('.form-group').classList.add('field-focused');
-            this.closest('.form-group').classList.add('focused');
+            // Don't apply focus styles if it's the hidden specialty select
+            if (this.id === 'specialty') return; 
+            
+            const parentGroup = this.closest('.form-group');
+            if (parentGroup) {
+                parentGroup.classList.add('field-focused');
+                parentGroup.classList.add('focused');
+            }
         });
         
         control.addEventListener('blur', function() {
-            this.closest('.form-group').classList.remove('field-focused');
-            this.closest('.form-group').classList.remove('focused');
+            if (this.id === 'specialty') return;
+
+            const parentGroup = this.closest('.form-group');
+             if (parentGroup) {
+                parentGroup.classList.remove('field-focused');
+                parentGroup.classList.remove('focused');
+             }
         });
         
         // Add validation visual cues
         control.addEventListener('change', function() {
+            if (this.id === 'specialty') return; // Ignore hidden select
+            
             if (this.value) {
-                this.style.borderColor = '#8b0648';
+                this.style.borderColor = 'var(--primary-color)'; // Use CSS variable
             } else {
-                this.style.borderColor = '';
+                this.style.borderColor = ''; // Revert to default
             }
         });
     });
@@ -203,72 +292,85 @@ document.addEventListener('DOMContentLoaded', function() {
         const facility = facilitySelect.value;
         const month = monthSelect.value;
         const quarter = quarterSelect.value;
-        const year = document.getElementById('year').value;
-        const specialty = specialtySelect.value;
-        const serviceType = document.getElementById('serviceType').value;
-        const objective = document.getElementById('objective').value;
-        const cta = document.getElementById('cta').value;
-        const region = document.getElementById('region').value;
-        const variant = document.getElementById('variant').value;
-        const campaignName = document.getElementById('campaignName').value;
+        const year = yearSelect.value;
+        const specialty = specialtySelect.value; 
+        const serviceType = serviceTypeSelect.value;
+        const objective = objectiveSelect.value;
+        const cta = ctaSelect.value;
+        const regionVal = regionSelect.value; 
+        const variant = variantSelect.value;
+        // Only get dynamic detail value if the service type is selected
+        const dynamicDetailValue = serviceType ? dynamicDetailInput.value : ''; 
         
-        // Validate all fields are filled
-        const requiredFields = [brand, facility, month, quarter, year, specialty, 
-                               serviceType, objective, cta, region, variant];
-        
-        const allFieldsFilled = requiredFields.every(field => field !== "");
+        // Base controls for validation
+        const baseControls = [
+            brandSelect, facilitySelect, monthSelect, quarterSelect, 
+            yearSelect, specialtySearch, serviceTypeSelect, 
+            objectiveSelect, ctaSelect, regionSelect, variantSelect
+        ];
+        // Conditionally add dynamic input to validation
+        const allControls = serviceType ? [...baseControls, dynamicDetailInput] : baseControls;
+
+        let allFieldsFilled = true;
+        allControls.forEach((control) => {
+            const valueToCheck = control.id === 'specialty-search' ? specialtySelect.value : control.value;
+            
+            control.classList.remove('is-invalid'); 
+            if (!valueToCheck) {
+                allFieldsFilled = false;
+                control.classList.add('is-invalid');
+                setTimeout(() => {
+                    control.classList.remove('is-invalid');
+                }, 600); 
+            }
+        });
         
         if (!allFieldsFilled) {
-            // Add shake animation to empty fields
-            requiredFields.forEach((field, index) => {
-                if (!field) {
-                    const elements = document.querySelectorAll('.form-control');
-                    elements[index].classList.add('is-invalid');
-                    
-                    setTimeout(() => {
-                        elements[index].classList.remove('is-invalid');
-                    }, 500);
-                }
-            });
-            
             alert("Please fill in all required fields");
             return;
         }
         
-        // Add loading animation
         this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
         this.disabled = true;
         
-        // Simulate processing (remove this setTimeout in production)
         setTimeout(() => {
-            // Generate the campaign name
-            const generatedName = `${brand}_${facility}_${month}_${quarter}_${year}_${specialty}_${serviceType}_${objective}_${cta}_${region}_${variant}_${campaignName}`;
+            // Generate the campaign name - use dynamicDetailValue (will be empty if serviceType not selected)
+            const generatedName = `${brand}_${facility}_${month}_${quarter}_${year}_${specialty}_${serviceType}_${objective}_${cta}_${regionVal}_${variant}_${dynamicDetailValue}`;
             
-            // Display the result with animation
             resultElement.textContent = generatedName;
             resultContainer.classList.add('show');
-            
-            // Reset button
             this.innerHTML = '<i class="fas fa-magic"></i> Generate Campaign Name';
             this.disabled = false;
-            
-            // Scroll to result
             resultContainer.scrollIntoView({ behavior: 'smooth' });
-        }, 800); // Simulated delay for effect
+        }, 800); 
     });
 
     // Reset form
     resetBtn.addEventListener('click', function() {
-        const formElements = document.querySelectorAll('.form-control');
-        formElements.forEach(element => {
-            element.value = '';
-        });
+        // Reset standard controls
+        [brandSelect, facilitySelect, monthSelect, quarterSelect, yearSelect, 
+         serviceTypeSelect, objectiveSelect, ctaSelect, regionSelect, variantSelect]
+        .forEach(element => { element.value = ''; });
+
+        specialtySearch.value = ''; 
+        specialtySelect.value = ''; 
         
-        // Hide result
-        resultContainer.classList.remove('show');
+        dynamicDetailInput.value = ''; 
+        dynamicDetailLabel.textContent = 'Description';
+        dynamicDetailInput.placeholder = 'Enter description';
+        dynamicDetailGroup.classList.add('hidden-by-default'); // Ensure it's hidden on reset
+        dynamicDetailGroup.classList.remove('visible'); 
+        
+        facilitySelect.innerHTML = '<option value="">Select Facility</option>'; 
+        quarterSelect.value = ''; 
+
+        resultContainer.classList.remove('show'); 
+        closeAllDropdowns(); 
+
+        document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
     });
 
-    // Enhanced copy button with bounce animation
+    // Enhanced copy button
     copyBtn.addEventListener('click', function() {
         const textToCopy = resultElement.textContent;
         
@@ -295,7 +397,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Add auto-suggestion for facility based on region
+    // Auto-suggestion for facility based on region
     document.getElementById('region').addEventListener('change', function() {
         const regionValue = this.value;
         const brandValue = brandSelect.value;
@@ -323,4 +425,79 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     });
+
+    // --- Specialty Dropdown Logic ---
+
+    // Toggle dropdown when clicking on input
+    specialtySearch.addEventListener('click', function(e) {
+        e.stopPropagation(); // Prevent document click listener
+        const isActive = selectDropdown.classList.contains('active');
+        closeAllDropdowns(); // Close others first
+        if (!isActive) {
+          selectDropdown.classList.add('active');
+          specialtyFormGroup.classList.add('dropdown-active');
+        }
+    });
+
+    // Make dropdown icon clickable too
+    const dropdownIcon = selectDropdown.querySelector('.dropdown-icon');
+    if (dropdownIcon) {
+        dropdownIcon.style.pointerEvents = 'auto'; // Make clickable
+        dropdownIcon.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const isActive = selectDropdown.classList.contains('active');
+            closeAllDropdowns();
+            if (!isActive) {
+                selectDropdown.classList.add('active');
+                specialtyFormGroup.classList.add('dropdown-active');
+            }
+        });
+    }
+
+    // Filter options based on search input
+    specialtySearch.addEventListener('input', function() {
+        const filter = this.value.toLowerCase();
+        const listItems = specialtyOptions.getElementsByTagName('li');
+        let hasVisibleItems = false;
+
+        for (let i = 0; i < listItems.length; i++) {
+            const text = listItems[i].textContent.toLowerCase();
+            if (text.includes(filter)) {
+                listItems[i].style.display = '';
+                hasVisibleItems = true;
+            } else {
+                listItems[i].style.display = 'none';
+            }
+        }
+
+        // Show dropdown if searching and results exist
+        if (!selectDropdown.classList.contains('active') && hasVisibleItems) {
+             selectDropdown.classList.add('active');
+             specialtyFormGroup.classList.add('dropdown-active');
+        } 
+        // Optional: Hide if no results? Decide based on UX preference.
+        // else if (!hasVisibleItems && selectDropdown.classList.contains('active')) {
+        //     selectDropdown.classList.remove('active');
+        //     specialtyFormGroup.classList.remove('dropdown-active');
+        // }
+    });
+
+    // Helper function to close all dropdowns
+    function closeAllDropdowns() {
+        document.querySelectorAll('.select-dropdown.active').forEach(dropdown => {
+            dropdown.classList.remove('active');
+            const formGroup = dropdown.closest('.form-group');
+            if (formGroup) {
+                formGroup.classList.remove('dropdown-active');
+            }
+        });
+    }
+
+    // Global click listener to close dropdown when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.select-dropdown.active')) {
+            closeAllDropdowns();
+        }
+    });
+    // --- End Specialty Dropdown Logic ---
 });
