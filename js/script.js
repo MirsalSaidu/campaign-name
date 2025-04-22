@@ -39,6 +39,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Specialties data
     const specialties = [
+        {code: "GEN", name: "General"},
         {code: "ADDICT", name: "Addiction Medicine"},
         {code: "ALLERG", name: "Allergy & Immunology"},
         {code: "ANESTH", name: "Anesthesiology"},
@@ -187,26 +188,106 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     // --- End Specialty Population ---
 
+    // NOW define the autoSelectCurrentDate function AFTER element definitions
+    function autoSelectCurrentDate() {
+        const now = new Date();
+        
+        // Auto-select month
+        const currentMonth = now.getMonth(); // 0-11
+        const monthCodes = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+        const monthCode = monthCodes[currentMonth];
+        monthSelect.value = monthCode;
+        
+        // Explicitly set quarter based on selected month
+        if (monthCode && monthToQuarter[monthCode]) {
+            quarterSelect.value = monthToQuarter[monthCode];
+        }
+        
+        // Auto-select year
+        const currentYear = now.getFullYear();
+        const shortYear = currentYear.toString().substr(2); // Get last 2 digits
+        
+        // Try to find matching year in dropdown
+        const yearOptions = yearSelect.options;
+        let yearFound = false;
+        
+        for (let i = 0; i < yearOptions.length; i++) {
+            if (yearOptions[i].value === shortYear) {
+                yearSelect.selectedIndex = i;
+                yearFound = true;
+                break;
+            }
+        }
+        
+        // If exact year not found but we have options, select nearest future year
+        if (!yearFound && yearOptions.length > 1) {
+            for (let i = 1; i < yearOptions.length; i++) {
+                if (parseInt(yearOptions[i].value) >= parseInt(shortYear)) {
+                    yearSelect.selectedIndex = i;
+                    break;
+                }
+            }
+        }
+        
+        // Also dispatch the change event to ensure all handlers run
+        if (monthSelect.value) {
+            const event = new Event('change');
+            monthSelect.dispatchEvent(event);
+        }
+    }
+    
+    // Add this after defining the autoSelectCurrentDate function:
+    let dateAutoPopulated = false;
+
+    // Add this after all form elements are defined and before other event listeners:
+    function setupAutoPopulateOnFirstInteraction() {
+        // Get only select elements - we want this to happen on actual selections, not clicks
+        const selectElements = document.querySelectorAll('select');
+        
+        const handleFirstSelection = function() {
+            if (!dateAutoPopulated) {
+                dateAutoPopulated = true;
+                autoSelectCurrentDate();
+                
+                // Remove all selection listeners
+                selectElements.forEach(el => {
+                    el.removeEventListener('change', handleFirstSelection);
+                });
+            }
+        };
+        
+        // Add change listeners to select elements only
+        selectElements.forEach(el => {
+            el.addEventListener('change', handleFirstSelection);
+        });
+    }
+
+    // Call this function after all elements are defined
+    setupAutoPopulateOnFirstInteraction();
+
     // --- Event Listeners (Should come after element definitions and population) ---
 
     // Update Dynamic Detail Field based on Service Type
     serviceTypeSelect.addEventListener('change', function() {
         const selectedType = this.value;
+        const dynamicDetailGroupElement = document.getElementById('dynamicDetailGroup');
         
         // Hide or show the dynamic field group
         if (selectedType) {
+            dynamicDetailGroupElement.style.display = "inline-block";
             dynamicDetailGroup.classList.remove('hidden-by-default');
-             dynamicDetailGroup.classList.add('visible');
+            dynamicDetailGroup.classList.add('visible');
         } else {
+            dynamicDetailGroupElement.style.display = "none";
             dynamicDetailGroup.classList.add('hidden-by-default');
-             dynamicDetailGroup.classList.remove('visible');
+            dynamicDetailGroup.classList.remove('visible');
             dynamicDetailLabel.textContent = 'Description';
             dynamicDetailInput.placeholder = 'Enter description';
             dynamicDetailInput.value = '';
             dynamicDetailInput.classList.remove('is-invalid');
             return;
         }
-
+        
         // Update label and placeholder based on selected type
         switch (selectedType) {
             case 'DOC':
@@ -286,34 +367,47 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Enhanced generate button with loading effect
+    // Modified generateBtn click handler to implement the requested changes
     generateBtn.addEventListener('click', function() {
-        const brand = brandSelect.value;
         const facility = facilitySelect.value;
         const month = monthSelect.value;
         const quarter = quarterSelect.value;
-        const year = yearSelect.value;
-        const specialty = specialtySelect.value; 
+        const yearCode = yearSelect.value; // The short year code (e.g., "25")
+        
+        // Extract the full year (e.g., "2025") from selected option text
+        let fullYear = "";
+        if (yearCode) {
+            const selectedOption = yearSelect.options[yearSelect.selectedIndex];
+            // Extract the full year from text like "25 - 2025"
+            const match = selectedOption.textContent.match(/\d{4}/);
+            if (match) {
+                fullYear = match[0];
+            } else {
+                // Fallback: construct from code if format changes
+                fullYear = "20" + yearCode;
+            }
+        }
+        
+        const specialty = specialtySelect.value; // Now optional
         const serviceType = serviceTypeSelect.value;
         const objective = objectiveSelect.value;
         const cta = ctaSelect.value;
         const regionVal = regionSelect.value; 
-        const variant = variantSelect.value;
-        // Only get dynamic detail value if the service type is selected
+        // Removed variant as requested
         const dynamicDetailValue = serviceType ? dynamicDetailInput.value : ''; 
         
-        // Base controls for validation
+        // Base controls for validation - exclude specialty and variant
         const baseControls = [
-            brandSelect, facilitySelect, monthSelect, quarterSelect, 
-            yearSelect, specialtySearch, serviceTypeSelect, 
-            objectiveSelect, ctaSelect, regionSelect, variantSelect
+            facilitySelect, monthSelect, quarterSelect, 
+            yearSelect, serviceTypeSelect, 
+            objectiveSelect, ctaSelect, regionSelect
         ];
         // Conditionally add dynamic input to validation
         const allControls = serviceType ? [...baseControls, dynamicDetailInput] : baseControls;
 
         let allFieldsFilled = true;
         allControls.forEach((control) => {
-            const valueToCheck = control.id === 'specialty-search' ? specialtySelect.value : control.value;
+            const valueToCheck = control.value;
             
             control.classList.remove('is-invalid'); 
             if (!valueToCheck) {
@@ -334,8 +428,14 @@ document.addEventListener('DOMContentLoaded', function() {
         this.disabled = true;
         
         setTimeout(() => {
-            // Generate the campaign name - use dynamicDetailValue (will be empty if serviceType not selected)
-            const generatedName = `${brand}_${facility}_${month}_${quarter}_${year}_${specialty}_${serviceType}_${objective}_${cta}_${regionVal}_${variant}_${dynamicDetailValue}`;
+            // New campaign name format:
+            // 1. No brand
+            // 2. Reordered to put Year before Quarter
+            // 3. Full year (2025)
+            // 4. No variant 
+            // 5. Specialty is included conditionally if provided
+            const specialtySegment = specialty ? `_${specialty}` : ''; 
+            const generatedName = `${facility}_${month}_${fullYear}_${quarter}${specialtySegment}_${serviceType}_${objective}_${cta}_${regionVal}_${dynamicDetailValue}`;
             
             resultElement.textContent = generatedName;
             resultContainer.classList.add('show');
@@ -348,8 +448,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // Reset form
     resetBtn.addEventListener('click', function() {
         // Reset standard controls
-        [brandSelect, facilitySelect, monthSelect, quarterSelect, yearSelect, 
-         serviceTypeSelect, objectiveSelect, ctaSelect, regionSelect, variantSelect]
+        [brandSelect, facilitySelect, monthSelect, yearSelect, quarterSelect, 
+         serviceTypeSelect, objectiveSelect, ctaSelect, regionSelect]
         .forEach(element => { element.value = ''; });
 
         specialtySearch.value = ''; 
@@ -358,8 +458,11 @@ document.addEventListener('DOMContentLoaded', function() {
         dynamicDetailInput.value = ''; 
         dynamicDetailLabel.textContent = 'Description';
         dynamicDetailInput.placeholder = 'Enter description';
-        dynamicDetailGroup.classList.add('hidden-by-default'); // Ensure it's hidden on reset
+        dynamicDetailGroup.classList.add('hidden-by-default');
         dynamicDetailGroup.classList.remove('visible'); 
+        
+        // Make sure dynamic detail is hidden after reset
+        dynamicDetailGroup.style.display = "none";
         
         facilitySelect.innerHTML = '<option value="">Select Facility</option>'; 
         quarterSelect.value = ''; 
@@ -368,6 +471,12 @@ document.addEventListener('DOMContentLoaded', function() {
         closeAllDropdowns(); 
 
         document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+        
+        // Reset the date auto-population flag so it will trigger again on next interaction
+        dateAutoPopulated = false;
+        
+        // Re-setup the auto-population functionality after reset
+        setupAutoPopulateOnFirstInteraction();
     });
 
     // Enhanced copy button
@@ -500,4 +609,65 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     // --- End Specialty Dropdown Logic ---
+
+    // Update the repositionDynamicDetailField function to correctly position the dynamic detail field
+    function repositionDynamicDetailField() {
+        // Get the Region field and the dynamic detail field
+        const regionFormGroup = regionSelect.closest('.form-group');
+        const dynamicDetailGroupElement = document.getElementById('dynamicDetailGroup');
+        
+        // Verify elements exist
+        if (regionFormGroup && dynamicDetailGroupElement) {
+            // Get the parent row that contains the Region field
+            const regionRow = regionFormGroup.parentElement;
+            
+            if (regionRow) {
+                // Remove the dynamic detail field from its current location
+                if (dynamicDetailGroupElement.parentElement) {
+                    dynamicDetailGroupElement.parentElement.removeChild(dynamicDetailGroupElement);
+                }
+                
+                // Add the dynamic detail field to the same row as Region
+                regionRow.appendChild(dynamicDetailGroupElement);
+                
+                // Style the form groups to display inline
+                regionFormGroup.style.display = "inline-block";
+                regionFormGroup.style.paddingRight = "10px";
+                
+                // Style the dynamic detail group - initially hidden
+                dynamicDetailGroupElement.style.display = "inline-block";
+                dynamicDetailGroupElement.style.paddingLeft = "10px";
+                dynamicDetailGroupElement.classList.add('hidden-by-default');
+                
+                // Ensure the field is hidden by default (not visible until service type is selected)
+                if (!serviceTypeSelect.value) {
+                    dynamicDetailGroupElement.style.display = "none";
+                }
+                
+                // Style the input field to match dropdowns
+                dynamicDetailInput.style.height = "38px";
+                dynamicDetailInput.style.width = "100%";
+                dynamicDetailInput.style.padding = "0.375rem 0.75rem";
+                dynamicDetailInput.style.borderRadius = "0.25rem";
+                dynamicDetailInput.style.border = "1px solid #ced4da";
+                dynamicDetailInput.style.fontSize = "1rem";
+                dynamicDetailInput.style.lineHeight = "1.5";
+                dynamicDetailInput.style.color = "#495057";
+                dynamicDetailInput.style.backgroundColor = "#fff";
+                
+                // Style the label consistently
+                const label = dynamicDetailGroupElement.querySelector('label');
+                if (label) {
+                    label.style.fontWeight = "600";
+                    label.style.color = "#7A093A";
+                    label.style.marginBottom = "0.5rem";
+                    label.style.display = "block";
+                }
+            }
+        }
+    }
+
+    // Call this right after other DOM elements are defined and before event handlers
+    // This ensures the field is properly positioned when the page loads
+    repositionDynamicDetailField();
 });
