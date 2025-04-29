@@ -367,12 +367,34 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Modified generateBtn click handler to implement the requested changes
+    // Add this code in the HTML portion to create the Campaign Type dropdown
+    const campaignTypeHtml = `
+    <div class="form-group">
+      <label for="campaignType">Campaign Type</label>
+      <select id="campaignType" class="form-control">
+        <option value="">Select Campaign Type</option>
+        <option value="CAMP">Campaign</option>
+        <option value="BOOST">Boosting</option>
+      </select>
+    </div>
+    `;
+
+    // Insert the Campaign Type dropdown after Service Type dropdown
+    const campaignTypeSelect = document.createElement('div');
+    campaignTypeSelect.innerHTML = campaignTypeHtml;
+    const serviceTypeFormGroup = serviceTypeSelect.closest('.form-group');
+    serviceTypeFormGroup.parentNode.insertBefore(campaignTypeSelect.firstElementChild, serviceTypeFormGroup.nextSibling);
+
+    // Now get a reference to the new dropdown
+    const campaignTypeDropdown = document.getElementById('campaignType');
+
+    // Modify the generateBtn click handler to include campaign type in the generated name
     generateBtn.addEventListener('click', function() {
         const facility = facilitySelect.value;
         const month = monthSelect.value;
         const quarter = quarterSelect.value;
-        const yearCode = yearSelect.value; // The short year code (e.g., "25")
+        const yearCode = yearSelect.value;
+        const campaignType = campaignTypeDropdown.value; // Get the campaign type
         
         // Extract the full year (e.g., "2025") from selected option text
         let fullYear = "";
@@ -393,15 +415,15 @@ document.addEventListener('DOMContentLoaded', function() {
         const objective = objectiveSelect.value;
         const cta = ctaSelect.value;
         const regionVal = regionSelect.value; 
-        // Removed variant as requested
         const dynamicDetailValue = serviceType ? dynamicDetailInput.value : ''; 
         
-        // Base controls for validation - exclude specialty and variant
+        // Add campaignType to the validation
         const baseControls = [
             facilitySelect, monthSelect, quarterSelect, 
-            yearSelect, serviceTypeSelect, 
+            yearSelect, serviceTypeSelect, campaignTypeDropdown,
             objectiveSelect, ctaSelect, regionSelect
         ];
+        
         // Conditionally add dynamic input to validation
         const allControls = serviceType ? [...baseControls, dynamicDetailInput] : baseControls;
 
@@ -428,14 +450,9 @@ document.addEventListener('DOMContentLoaded', function() {
         this.disabled = true;
         
         setTimeout(() => {
-            // New campaign name format:
-            // 1. No brand
-            // 2. Reordered to put Year before Quarter
-            // 3. Full year (2025)
-            // 4. No variant 
-            // 5. Specialty is included conditionally if provided
+            // New campaign name format with campaign type at the beginning
             const specialtySegment = specialty ? `_${specialty}` : ''; 
-            const generatedName = `${facility}_${month}_${fullYear}_${quarter}${specialtySegment}_${serviceType}_${objective}_${cta}_${regionVal}_${dynamicDetailValue}`;
+            const generatedName = `${campaignType}_${facility}_${month}_${fullYear}_${quarter}${specialtySegment}_${serviceType}_${objective}_${cta}_${regionVal}_${dynamicDetailValue}`;
             
             resultElement.textContent = generatedName;
             resultContainer.classList.add('show');
@@ -447,9 +464,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Reset form
     resetBtn.addEventListener('click', function() {
-        // Reset standard controls
+        // Reset standard controls including campaign type
         [brandSelect, facilitySelect, monthSelect, yearSelect, quarterSelect, 
-         serviceTypeSelect, objectiveSelect, ctaSelect, regionSelect]
+         serviceTypeSelect, campaignTypeDropdown, objectiveSelect, ctaSelect, regionSelect]
         .forEach(element => { element.value = ''; });
 
         specialtySearch.value = ''; 
