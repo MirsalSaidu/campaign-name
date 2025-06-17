@@ -14,7 +14,8 @@ document.addEventListener('DOMContentLoaded', function() {
             {code: "BMC Barari", name: "Burjeel Medical Center, Barari, Al Ain"},
             {code: "BMC Al Zeina", name: "Burjeel Medical Centre, Al Zeina, Al Raha Beach"},
             {code: "BDSC Barari", name: "Barari for One Day Surgery Center Al Ain"},
-            {code: "BDSC Dhafra", name: "Burjeel Day Surgery Centre Al Dhafra"}
+            {code: "BDSC Dhafra", name: "Burjeel Day Surgery Centre Al Dhafra"},
+            {code: "BMC Saadiyat", name: "Burjeel by the Beach Clinic Saadiyat Island"}
         ],
         LLH: [
             {code: "LLH Abu Dhabi", name: "LLH Hospital Abu Dhabi"},
@@ -157,6 +158,139 @@ document.addEventListener('DOMContentLoaded', function() {
     const copyBtn = document.getElementById('copy');
     const resultContainer = document.querySelector('.result-container');
     const resultElement = document.getElementById('result');
+
+    // First, let's create a more robust mapping system that can handle partial matches
+    const facilityCodeMapping = {
+        "Burjeel Holdings": "BHL1",
+        "Burjeel Hospital Abu Dhabi": "BU10",
+        "Burjeel Medical City": "BM10",
+        "Burjeel Medical City Abu Dhabi": "BM10",
+        "BMC": "BM10",
+        "Burjeel Day Surgery Center Al Reem Island": "BN01",
+        "BDSC Reem": "BN01",
+        "Burjeel Hospital Dubai": "DU10",
+        "BH Dubai": "DU10",
+        "Burjeel Specialty Hospital Sharjah": "BS10",
+        "BH Sharjah": "BS10",
+        "Burjeel Royal Hospital Al Ain": "BR10",
+        "BRH Al Ain": "BR10",
+        "Burjeel Royal Asharej Al Ain": "BA01",
+        "BRH Asharej": "BA01",
+        "Burjeel Medical Center Al Shamkha Makani Mall": "BM02",
+        "BMC Shamkha": "BM02",
+        "Burjeel Day Surgery Center Al Shahama Deerfields Mall": "BM01",
+        "BDSC Shahama": "BM01",
+        "Burjeel Medical Centre Al Marina": "HP01",
+        "BMC Marina": "HP01",
+        "Burjeel Medical Center Barari Al Ain": "BM03",
+        "BMC Barari": "BM03",
+        "Burjeel Medical Centre Al Zeina Al Raha Beach": "MC03",
+        "BMC Al Zeina": "MC03",
+        "Barari for One Day Surgery Center Al Ain": "BN 05",
+        "BDSC Barari": "BN 05",
+        "Burjeel Day Surgery Centre Al Dhafra": "BN 03",
+        "BDSC Dhafra": "BN 03",
+        "Burjeel by the Beach Clinic Saadiyat Island": "BM08",
+        "Medeor Hospital Abu Dhabi": "MH01",
+        "MED Abu Dhabi": "MH01",
+        "Medeor Hospital Dubai": "MH02",
+        "MED Dubai": "MH02",
+        "Medeor Medical Center Abu Dhabi": "MM01",
+        "MedM Abu Dhabi": "MM01",
+        "LLH Hospital Abu Dhabi": "LH10",
+        "LLH Abu Dhabi": "LH10",
+        "LLH Hospital Musaffah": "LL01",
+        "LLH Musaffah": "LL01",
+        "LLH Medical Center Musaffah": "LL02",
+        "LLHM Musaffah": "LL02",
+        "LLH Oasis Medical Centre Madinat Zayed": "LL05",
+        "LLH Oasis": "LL05",
+        "LLH Medical Centre Al Ain": "LL13",
+        "LLHM Al Ain": "LL13",
+        "LLH Medical Centre Al Najda, Abu Dhabi": "LL18",
+        "LLHM Al Najda": "LL18",
+        "Lifecare Hospital Musaffah": "LC01",
+        "Lifecare": "LC01",
+        "Tajmeel Clinic – Al Karamah Abu Dhabi": "TM01",
+        "Tajmeel Clinic - Aldar HQ Abu Dhabi": "TM02",
+        "Tajmeel Clinic - Shahama Abu Dhabi": "TM03",
+        "Tajmeel Clinic – Barari Mall Al Ain": "TM04",
+        "Tajmeel Clinic - Sheikh Zayed Road Dubai": "TM05",
+        "Tajmeel Royal Dental Clinic Abu Dhabi": "TM06"
+    };
+
+    // Create the facility code field HTML
+    const facilityCodeHtml = `
+    <div class="form-group">
+      <label for="facilityCode">Facility Code</label>
+      <input type="text" id="facilityCode" class="form-control" readonly>
+    </div>
+    `;
+
+    // Add this to your JavaScript after the elements are defined
+    // Insert the Facility Code field after Facility dropdown
+    const facilityCodeField = document.createElement('div');
+    facilityCodeField.innerHTML = facilityCodeHtml;
+    const facilityFormGroup = facilitySelect.closest('.form-group');
+    facilityFormGroup.parentNode.insertBefore(facilityCodeField.firstElementChild, facilityFormGroup.nextSibling);
+
+    // Now get a reference to the new field
+    const facilityCodeInput = document.getElementById('facilityCode');
+
+    // Update the facility code when facility is selected
+    facilitySelect.addEventListener('change', function() {
+        const selectedFacility = this.options[this.selectedIndex];
+        if (!selectedFacility || selectedFacility.value === "") {
+            facilityCodeInput.value = '';
+            return;
+        }
+        
+        // Get both the code and full name from the option text
+        const optionText = selectedFacility.textContent;
+        const facilityCode = selectedFacility.value;
+        
+        // Try direct match with the option text first
+        if (facilityCodeMapping[optionText]) {
+            facilityCodeInput.value = facilityCodeMapping[optionText];
+            return;
+        }
+        
+        // Try match with just the code part (like "BDSC Shahama")
+        if (facilityCodeMapping[facilityCode]) {
+            facilityCodeInput.value = facilityCodeMapping[facilityCode];
+            return;
+        }
+        
+        // Try to extract the name part after the dash and match
+        const parts = optionText.split(' - ');
+        if (parts.length > 1) {
+            const facilityName = parts[1].trim();
+            if (facilityCodeMapping[facilityName]) {
+                facilityCodeInput.value = facilityCodeMapping[facilityName];
+                return;
+            }
+        }
+        
+        // Try to match the code part before the dash
+        if (parts.length > 0) {
+            const shortCode = parts[0].trim();
+            if (facilityCodeMapping[shortCode]) {
+                facilityCodeInput.value = facilityCodeMapping[shortCode];
+                return;
+            }
+        }
+        
+        // If all else fails, try a partial match
+        for (const key in facilityCodeMapping) {
+            if (optionText.includes(key) || key.includes(optionText)) {
+                facilityCodeInput.value = facilityCodeMapping[key];
+                return;
+            }
+        }
+        
+        // No match found
+        facilityCodeInput.value = '';
+    });
 
     // --- Populate Specialty Dropdown ---
     specialtyOptions.innerHTML = ''; // Clear visible list first
@@ -388,47 +522,87 @@ document.addEventListener('DOMContentLoaded', function() {
     // Now get a reference to the new dropdown
     const campaignTypeDropdown = document.getElementById('campaignType');
 
-    // Modify the generateBtn click handler to include campaign type in the generated name
+    // Function to modify form elements
+    function modifyFormElements() {
+        // Find the CTA and Service Type form groups
+        const ctaFormGroup = document.getElementById('cta')?.closest('.form-group');
+        const serviceTypeFormGroup = document.getElementById('serviceType')?.closest('.form-group');
+        
+        // Remove them from the DOM
+        if (ctaFormGroup && ctaFormGroup.parentNode) {
+            ctaFormGroup.parentNode.removeChild(ctaFormGroup);
+        }
+        
+        if (serviceTypeFormGroup && serviceTypeFormGroup.parentNode) {
+            serviceTypeFormGroup.parentNode.removeChild(serviceTypeFormGroup);
+        }
+        
+        // Add a new Service Name field that's always visible
+        const serviceNameHtml = `
+        <div class="form-group" id="serviceNameGroup">
+          <label for="serviceName">Service Name</label>
+          <input type="text" id="serviceName" class="form-control" placeholder="Enter Service Name">
+        </div>
+        `;
+        
+        // Find where to insert the service name field (after Region)
+        const regionFormGroup = document.getElementById('region')?.closest('.form-group');
+        if (regionFormGroup && regionFormGroup.parentNode) {
+            const serviceNameField = document.createElement('div');
+            serviceNameField.innerHTML = serviceNameHtml;
+            regionFormGroup.parentNode.insertBefore(serviceNameField.firstElementChild, regionFormGroup.nextSibling);
+        }
+    }
+
+    // Call this function after all DOM elements are loaded
+    modifyFormElements();
+
+    // Get reference to the new service name field
+    const serviceNameInput = document.getElementById('serviceName');
+
+    // Update the generate button to format the output correctly
     generateBtn.addEventListener('click', function() {
         const facility = facilitySelect.value;
+        const facilityCode = facilityCodeInput.value;
         const month = monthSelect.value;
         const quarter = quarterSelect.value;
         const yearCode = yearSelect.value;
-        const campaignType = campaignTypeDropdown.value; // Get the campaign type
+        const campaignType = campaignTypeDropdown.value;
+        const serviceName = serviceNameInput.value;
         
-        // Extract the full year (e.g., "2025") from selected option text
+        // Get the full facility name with code from the select option
+        let facilityFullName = "";
+        if (facility) {
+            const selectedOption = facilitySelect.options[facilitySelect.selectedIndex];
+            facilityFullName = selectedOption.textContent; // This will be like "BMC - Burjeel Medical City"
+        }
+        
+        // Extract the full year
         let fullYear = "";
         if (yearCode) {
             const selectedOption = yearSelect.options[yearSelect.selectedIndex];
-            // Extract the full year from text like "25 - 2025"
             const match = selectedOption.textContent.match(/\d{4}/);
             if (match) {
                 fullYear = match[0];
             } else {
-                // Fallback: construct from code if format changes
                 fullYear = "20" + yearCode;
             }
         }
         
-        const specialty = specialtySelect.value; // Now optional
-        const serviceType = serviceTypeSelect.value;
+        const specialty = specialtySelect.value; // Optional
         const objective = objectiveSelect.value;
-        const cta = ctaSelect.value;
-        const regionVal = regionSelect.value; 
-        const dynamicDetailValue = serviceType ? dynamicDetailInput.value : ''; 
+        const regionVal = regionSelect.value;
         
-        // Add campaignType to the validation
+        // Validation remains the same
         const baseControls = [
             facilitySelect, monthSelect, quarterSelect, 
-            yearSelect, serviceTypeSelect, campaignTypeDropdown,
-            objectiveSelect, ctaSelect, regionSelect
+            yearSelect, campaignTypeDropdown,
+            objectiveSelect, regionSelect,
+            serviceNameInput
         ];
         
-        // Conditionally add dynamic input to validation
-        const allControls = serviceType ? [...baseControls, dynamicDetailInput] : baseControls;
-
         let allFieldsFilled = true;
-        allControls.forEach((control) => {
+        baseControls.forEach((control) => {
             const valueToCheck = control.value;
             
             control.classList.remove('is-invalid'); 
@@ -441,6 +615,15 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
         
+        // Also validate that facility code was generated
+        if (!facilityCodeInput.value) {
+            facilityCodeInput.classList.add('is-invalid');
+            setTimeout(() => {
+                facilityCodeInput.classList.remove('is-invalid');
+            }, 600);
+            allFieldsFilled = false;
+        }
+        
         if (!allFieldsFilled) {
             alert("Please fill in all required fields");
             return;
@@ -450,9 +633,10 @@ document.addEventListener('DOMContentLoaded', function() {
         this.disabled = true;
         
         setTimeout(() => {
-            // New campaign name format with campaign type at the beginning
-            const specialtySegment = specialty ? `_${specialty}` : ''; 
-            const generatedName = `${campaignType}_${facility}_${month}_${fullYear}_${quarter}${specialtySegment}_${serviceType}_${objective}_${cta}_${regionVal}_${dynamicDetailValue}`;
+            // Updated format to match example:
+            // CAMP_BM10_BMC - Burjeel Medical City_JUN_2025_Q2_GEN_REACH_UAE_sasa
+            const specialtySegment = specialty ? `_${specialty}` : '_GEN'; // Default to GEN if no specialty
+            const generatedName = `${campaignType}_${facilityCode}_${facilityFullName}_${month}_${fullYear}_${quarter}${specialtySegment}_${objective}_${regionVal}_${serviceName}`;
             
             resultElement.textContent = generatedName;
             resultContainer.classList.add('show');
@@ -462,24 +646,16 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 800); 
     });
 
-    // Reset form
+    // Update the reset function to include the service name field
     resetBtn.addEventListener('click', function() {
-        // Reset standard controls including campaign type
+        // Reset standard controls
         [brandSelect, facilitySelect, monthSelect, yearSelect, quarterSelect, 
-         serviceTypeSelect, campaignTypeDropdown, objectiveSelect, ctaSelect, regionSelect]
+         campaignTypeDropdown, objectiveSelect, regionSelect, serviceNameInput]
         .forEach(element => { element.value = ''; });
 
         specialtySearch.value = ''; 
         specialtySelect.value = ''; 
-        
-        dynamicDetailInput.value = ''; 
-        dynamicDetailLabel.textContent = 'Description';
-        dynamicDetailInput.placeholder = 'Enter description';
-        dynamicDetailGroup.classList.add('hidden-by-default');
-        dynamicDetailGroup.classList.remove('visible'); 
-        
-        // Make sure dynamic detail is hidden after reset
-        dynamicDetailGroup.style.display = "none";
+        facilityCodeInput.value = '';
         
         facilitySelect.innerHTML = '<option value="">Select Facility</option>'; 
         quarterSelect.value = ''; 
@@ -489,10 +665,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
         document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
         
-        // Reset the date auto-population flag so it will trigger again on next interaction
+        // Reset the date auto-population flag
         dateAutoPopulated = false;
-        
-        // Re-setup the auto-population functionality after reset
         setupAutoPopulateOnFirstInteraction();
     });
 
