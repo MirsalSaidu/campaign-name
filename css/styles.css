@@ -134,10 +134,10 @@ body {
 
 .form-group {
     margin-bottom: 5px;
-    animation: fadeInUp 0.5s ease-out;
+    /* animation: fadeInUp 0.5s ease-out; */
     animation-fill-mode: both;
     position: relative;
-    z-index: 1;
+    /* z-index: 1; */
 }
 
 .form-group:nth-child(1) { animation-delay: 0.1s; }
@@ -507,7 +507,7 @@ select.form-control {
 /* Ensure form groups don't interfere unnecessarily unless active */
 .form-group {
     position: relative;
-    z-index: 1;
+    /* z-index: 1; */
 }
 
 /* When a dropdown inside is active, raise the form group's z-index */
@@ -527,4 +527,207 @@ select.form-control {
     display: block;
     /* opacity: 1; */
     /* transition: opacity 0.3s ease-in-out; */
+}
+
+/* Add these styles for the tabs */
+.tabs-container {
+    margin-bottom: 30px;
+    width: 100%;
+    position: relative;
+}
+
+.tabs {
+    display: flex;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    position: relative;
+}
+
+.tab {
+    flex: 1;
+    text-align: center;
+    padding: 15px 20px;
+    cursor: pointer;
+    font-weight: 600;
+    color: #666;
+    transition: all 0.3s ease;
+    position: relative;
+    z-index: 1;
+}
+
+.tab.active {
+    color: var(--primary-color);
+}
+
+.tab-indicator {
+    position: absolute;
+    height: 3px;
+    bottom: 0;
+    width: 50%;
+    background-color: var(--primary-color);
+    transition: all 0.3s ease;
+    border-radius: 3px;
+}
+
+/* For Meta tab (default) */
+.tab-indicator {
+    left: 0;
+}
+
+/* For Google Ads tab */
+.tabs-container.google .tab-indicator {
+    left: 50%;
+}
+
+/* Add styles for multi-select dropdown */
+.multi-select-dropdown {
+    position: relative;
+    width: 100%;
+    z-index: 9000;
+}
+
+.multi-select-input {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.multi-select-input input {
+    width: 100%;
+    padding: 12px 15px;
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 16px;
+    transition: all 0.3s ease;
+    background-color: #fff;
+    cursor: pointer;
+}
+
+.multi-select-input input:focus {
+    border-color: var(--primary-color);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(139, 6, 72, 0.2);
+}
+
+.multi-select-options {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    max-height: 250px;
+    overflow-y: auto;
+    background: white;
+    border: 2px solid var(--border-color);
+    border-radius: 0 0 8px 8px;
+    z-index: 9999;
+    box-shadow: 0 5px 15px var(--shadow-color);
+    display: none;
+    margin-top: 5px;
+}
+
+.multi-select-dropdown.active {
+    z-index: 10000;
+}
+
+.multi-select-dropdown.active .multi-select-options {
+    display: block;
+    z-index: 10001;
+}
+
+.checkbox-item {
+    padding: 10px 15px;
+    border-bottom: 1px solid var(--border-color);
+    background-color: white;
+}
+
+.checkbox-item:last-child {
+    border-bottom: none;
+}
+
+.checkbox-item label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    width: 100%;
+    margin: 0;
+    font-weight: normal;
+    color: var(--text-color);
+}
+
+.checkbox-item input[type="checkbox"] {
+    margin-right: 10px;
+    width: auto;
+    height: auto;
+}
+
+.selected-items {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-top: 10px;
+}
+
+.selected-tag {
+    background-color: var(--accent-color);
+    color: var(--primary-dark);
+    padding: 4px 10px;
+    border-radius: 16px;
+    font-size: 14px;
+    display: inline-flex;
+    align-items: center;
+}
+
+.remove-tag {
+    margin-left: 5px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 16px;
+}
+
+.remove-tag:hover {
+    color: var(--primary-color);
+}
+
+/* Ensure the dropdown doesn't overlap with other elements */
+/* #multiSelectFacilityGroup {
+    margin-bottom: 70px; 
+} */
+
+/* Add these styles to ensure the floating dropdown appears correctly */
+#floating-dropdown-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 0;
+    pointer-events: none;
+    z-index: 999999;
+}
+
+#current-floating-dropdown {
+    pointer-events: auto;
+}
+
+.checkbox-item {
+    padding: 10px 15px;
+    border-bottom: 1px solid #e0d0d8;
+    background-color: white;
+}
+
+.checkbox-item label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    width: 100%;
+    margin: 0;
+    font-weight: normal;
+    color: #4a4a4a;
+}
+
+.checkbox-item input[type="checkbox"] {
+    margin-right: 10px;
+    width: 16px !important;
+    height: 16px !important;
 }
