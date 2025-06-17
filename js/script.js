@@ -629,7 +629,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         if (!allFieldsFilled) {
-            alert("Please fill in all required fields");
+            showNotification('Required Fields', 'Please fill in all required fields', 'error');
             return;
         }
         
@@ -866,3 +866,148 @@ document.addEventListener('DOMContentLoaded', function() {
     // This ensures the field is properly positioned when the page loads
     repositionDynamicDetailField();
 });
+
+// Create a more professional notification system
+function createNotificationSystem() {
+    // Create notification container
+    const notificationContainer = document.createElement('div');
+    notificationContainer.id = 'notification-container';
+    notificationContainer.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 10000;
+        transition: all 0.3s ease;
+    `;
+    document.body.appendChild(notificationContainer);
+    
+    // Add CSS for notifications
+    const notificationStyles = document.createElement('style');
+    notificationStyles.textContent = `
+        .notification {
+            padding: 15px 25px;
+            margin-bottom: 15px;
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            animation: slideIn 0.5s forwards;
+            max-width: 400px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .notification-error {
+            background-color: #fff;
+            border-left: 4px solid #e74c3c;
+            color: #333;
+        }
+        
+        .notification-success {
+            background-color: #fff;
+            border-left: 4px solid #2ecc71;
+            color: #333;
+        }
+        
+        .notification-info {
+            background-color: #fff;
+            border-left: 4px solid #3498db;
+            color: #333;
+        }
+        
+        .notification-content {
+            flex: 1;
+        }
+        
+        .notification-title {
+            font-weight: 600;
+            margin-bottom: 5px;
+            font-size: 16px;
+        }
+        
+        .notification-message {
+            font-size: 14px;
+        }
+        
+        .notification-close {
+            color: #999;
+            cursor: pointer;
+            padding: 0 5px;
+            font-size: 18px;
+            font-weight: bold;
+            margin-left: 15px;
+        }
+        
+        .notification-close:hover {
+            color: #333;
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+    `;
+    document.head.appendChild(notificationStyles);
+}
+
+// Function to show notifications
+function showNotification(title, message, type = 'info', duration = 5000) {
+    const container = document.getElementById('notification-container') || 
+                     document.body;
+    
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    
+    notification.innerHTML = `
+        <div class="notification-content">
+            <div class="notification-title">${title}</div>
+            <div class="notification-message">${message}</div>
+        </div>
+        <span class="notification-close">&times;</span>
+    `;
+    
+    container.appendChild(notification);
+    
+    // Handle close button
+    const closeBtn = notification.querySelector('.notification-close');
+    closeBtn.addEventListener('click', () => {
+        notification.style.animation = 'slideOut 0.5s forwards';
+        setTimeout(() => {
+            notification.remove();
+        }, 500);
+    });
+    
+    // Auto-dismiss after duration
+    if (duration > 0) {
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.style.animation = 'slideOut 0.5s forwards';
+                setTimeout(() => {
+                    notification.remove();
+                }, 500);
+            }
+        }, duration);
+    }
+    
+    return notification;
+}
+
+// Initialize the notification system
+createNotificationSystem();
