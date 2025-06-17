@@ -560,26 +560,62 @@ document.addEventListener('DOMContentLoaded', function() {
     // Get reference to the new service name field
     const serviceNameInput = document.getElementById('serviceName');
 
-    // Update the generate button to format the output correctly
+    // Update the generate button to format Google Ads output correctly
     generateBtn.addEventListener('click', function() {
-        const facility = facilitySelect.value;
-        const facilityCode = facilityCodeInput.value;
+        // Get the active platform
+        const activePlatform = document.querySelector('.tab.active').dataset.tab;
+        
+        // Get values based on platform
+        let facilityCode, facilityShortCode, facilityValue, facilityDisplayName;
+        
+        if (activePlatform === 'meta') {
+            // Single facility for Meta
+            facilityValue = facilitySelect.value;
+            facilityCode = facilityCodeInput.value;
+            
+            // Get short code from selected option
+            if (facilityValue) {
+                const selectedOption = facilitySelect.options[facilitySelect.selectedIndex];
+                const parts = selectedOption.textContent.split(' - ');
+                facilityShortCode = parts[0].trim();
+                facilityDisplayName = facilityShortCode;
+            }
+        } else {
+            // Multiple facilities for Google Ads
+            const checkedFacilities = document.querySelectorAll('#facility-options input[type="checkbox"]:checked');
+            
+            if (checkedFacilities.length === 0) {
+                showNotification('Required Fields', 'Please select at least one facility', 'error');
+                return;
+            }
+            
+            // For Google Ads, get all facility codes and names
+            const facilityCodes = facilityCodeInput.value; // Already comma-separated
+            
+            // Get all selected facility names/codes for display
+            const facilityNames = [];
+            checkedFacilities.forEach(checkbox => {
+                facilityNames.push(checkbox.value); // Use the short code (e.g., "BH Abu Dhabi")
+            });
+            
+            // Use the first facility name with +N indicator if more than one
+            facilityDisplayName = facilityNames[0];
+            if (checkedFacilities.length > 1) {
+                facilityDisplayName += `+${checkedFacilities.length - 1}`;
+            }
+            
+            facilityCode = facilityCodes;
+            facilityShortCode = facilityDisplayName;
+        }
+        
+        // Get other values
         const month = monthSelect.value;
         const quarter = quarterSelect.value;
         const yearCode = yearSelect.value;
-        const campaignType = campaignTypeDropdown.value;
         const serviceName = serviceNameInput.value;
         
-        // Get just the short facility code from the select option
-        let facilityShortCode = "";
-        if (facility) {
-            // Extract just the code part (e.g., "BMC" from "BMC - Burjeel Medical City")
-            const selectedOption = facilitySelect.options[facilitySelect.selectedIndex];
-            const parts = selectedOption.textContent.split(' - ');
-            if (parts.length > 0) {
-                facilityShortCode = parts[0].trim();
-            }
-        }
+        // Get campaign type only for Meta
+        const campaignType = activePlatform === 'meta' ? campaignTypeDropdown.value : '';
         
         // Extract the full year
         let fullYear = "";
@@ -597,16 +633,22 @@ document.addEventListener('DOMContentLoaded', function() {
         const objective = objectiveSelect.value;
         const regionVal = regionSelect.value;
         
-        // Validation remains the same
+        // Validation fields based on platform
         const baseControls = [
-            facilitySelect, monthSelect, quarterSelect, 
-            yearSelect, campaignTypeDropdown,
+            monthSelect, quarterSelect, yearSelect, 
             objectiveSelect, regionSelect,
             serviceNameInput
         ];
         
+        // For Meta, add facility and campaign type validation
+        if (activePlatform === 'meta') {
+            baseControls.push(facilitySelect, campaignTypeDropdown);
+        }
+        
         let allFieldsFilled = true;
         baseControls.forEach((control) => {
+            if (!control) return; // Skip if control doesn't exist
+            
             const valueToCheck = control.value;
             
             control.classList.remove('is-invalid'); 
@@ -618,6 +660,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 }, 600); 
             }
         });
+        
+        // For Google Ads, check if at least one facility is selected
+        if (activePlatform === 'google') {
+            const checkedFacilities = document.querySelectorAll('#facility-options input[type="checkbox"]:checked');
+            if (checkedFacilities.length === 0) {
+                allFieldsFilled = false;
+                document.getElementById('facility-search').classList.add('is-invalid');
+                setTimeout(() => {
+                    document.getElementById('facility-search').classList.remove('is-invalid');
+                }, 600);
+            }
+        }
         
         // Also validate that facility code was generated
         if (!facilityCodeInput.value) {
@@ -637,17 +691,24 @@ document.addEventListener('DOMContentLoaded', function() {
         this.disabled = true;
         
         setTimeout(() => {
-            // Updated format to match example:
-            // CAMP_BM10_BMC_JUN_2025_Q2_GEN_AWARE_UAE_ss
-            const specialtySegment = specialty ? specialty : 'GEN'; // Default to GEN if no specialty
-            const generatedName = `${campaignType}_${facilityCode}_${facilityShortCode}_${month}_${fullYear}_${quarter}_${specialtySegment}_${objective}_${regionVal}_${serviceName}`;
+            // Generate name based on platform
+            const specialtySegment = specialty ? specialty : 'GEN';
+            
+            let generatedName;
+            if (activePlatform === 'meta') {
+                // Meta format: CAMP_FacilityCode_FacilityShortCode_Month_Year_Quarter_Specialty_Objective_Region_ServiceName
+                generatedName = `${campaignType}_${facilityCode}_${facilityShortCode}_${month}_${fullYear}_${quarter}_${specialtySegment}_${objective}_${regionVal}_${serviceName}`;
+            } else {
+                // Google Ads format: ServiceName_FacilityCodes_Month_Year_Quarter_Specialty_Objective_Region_FacilityDisplayName
+                generatedName = `${serviceName}_${facilityCode}_${month}_${fullYear}_${quarter}_${specialtySegment}_${objective}_${regionVal}_${facilityDisplayName}`;
+            }
             
             resultElement.textContent = generatedName;
             resultContainer.classList.add('show');
             this.innerHTML = '<i class="fas fa-magic"></i> Generate Campaign Name';
             this.disabled = false;
             resultContainer.scrollIntoView({ behavior: 'smooth' });
-        }, 800); 
+        }, 800);
     });
 
     // Update the reset function to include the service name field
@@ -664,7 +725,7 @@ document.addEventListener('DOMContentLoaded', function() {
         facilitySelect.innerHTML = '<option value="">Select Facility</option>'; 
         quarterSelect.value = ''; 
 
-        resultContainer.classList.remove('show'); 
+        resultContainer.classList.remove('show');
         closeAllDropdowns(); 
 
         document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
@@ -865,6 +926,445 @@ document.addEventListener('DOMContentLoaded', function() {
     // Call this right after other DOM elements are defined and before event handlers
     // This ensures the field is properly positioned when the page loads
     repositionDynamicDetailField();
+
+    // Add tab switching functionality
+    function setupTabs() {
+        const tabs = document.querySelectorAll('.tab');
+        const tabsContainer = document.querySelector('.tabs-container');
+        const facilityFormGroup = document.getElementById('facility').closest('.form-group');
+        
+        // Create the multi-select dropdown for Google Ads
+        const multiSelectHtml = `
+        <div class="form-group" id="multiSelectFacilityGroup" style="display: none;">
+            <label for="multiSelectFacility">Facilities (Multiple Selection)</label>
+            <div class="multi-select-dropdown">
+                <div class="multi-select-input">
+                    <input type="text" id="facility-search" placeholder="Search or select facilities..." readonly>
+                    <span class="dropdown-icon"><i class="fas fa-chevron-down"></i></span>
+                </div>
+                <div class="multi-select-options" id="facility-options">
+                    <!-- Will be populated by JavaScript -->
+                </div>
+                <div class="selected-items" id="selected-facilities">
+                    <!-- Selected items will appear here -->
+                </div>
+            </div>
+        </div>
+        `;
+        
+        // Insert the multi-select after the regular facility dropdown
+        const multiSelectElement = document.createElement('div');
+        multiSelectElement.innerHTML = multiSelectHtml;
+        facilityFormGroup.parentNode.insertBefore(multiSelectElement.firstElementChild, facilityFormGroup.nextSibling);
+        
+        // Get references to the new elements
+        const multiSelectFacilityGroup = document.getElementById('multiSelectFacilityGroup');
+        const facilitySearch = document.getElementById('facility-search');
+        const facilityOptions = document.getElementById('facility-options');
+        const selectedFacilities = document.getElementById('selected-facilities');
+        
+        // Platform-specific configurations
+        const platformConfigs = {
+            meta: {
+                // Meta-specific objective options
+                objectives: [
+                    {value: "AWARE", text: "AWARE - Brand Awareness"},
+                    {value: "REACH", text: "REACH - Reach"},
+                    {value: "TRAF", text: "TRAF - Traffic"},
+                    {value: "ENGAGE", text: "ENGAGE - Engagement"},
+                    {value: "VIDEO", text: "VIDEO - Video Views"},
+                    {value: "LEAD", text: "LEAD - Lead Generation"},
+                    {value: "MSGS", text: "MSGS - Messages"},
+                    {value: "CONV", text: "CONV - Conversions"},
+                    {value: "CATALOG", text: "CATALOG - Catalog Sales"},
+                    {value: "STORE", text: "STORE - Store Traffic"},
+                    {value: "APP", text: "APP - App Promotion"}
+                ]
+            },
+            google: {
+                // Google Ads-specific objective options
+                objectives: [
+                    {value: "SEARCH", text: "SEARCH - Search Campaign"},
+                    {value: "DISP", text: "DISP - Display Campaign"},
+                    {value: "VIDEO", text: "VIDEO - Video Campaign"},
+                    {value: "SHOP", text: "SHOP - Shopping Campaign"},
+                    {value: "PERF", text: "PERF - Performance Max"},
+                    {value: "APP", text: "APP - App Campaign"},
+                    {value: "LOCAL", text: "LOCAL - Local Campaign"},
+                    {value: "DISC", text: "DISC - Discovery Campaign"}
+                ]
+            }
+        };
+        
+        // Function to update form based on selected platform
+        function updateFormForPlatform(platform) {
+            // Update objective dropdown options
+            const objectiveSelect = document.getElementById('objective');
+            objectiveSelect.innerHTML = '<option value="">Select Objective</option>';
+            
+            const objectives = platformConfigs[platform].objectives;
+            objectives.forEach(obj => {
+                const option = document.createElement('option');
+                option.value = obj.value;
+                option.textContent = obj.text;
+                objectiveSelect.appendChild(option);
+            });
+            
+            // Toggle between single select and multi-select facility dropdowns
+            const facilityFormGroup = document.getElementById('facility').closest('.form-group');
+            const multiSelectFacilityGroup = document.getElementById('multiSelectFacilityGroup');
+            
+            if (platform === 'google') {
+                // For Google Ads: Show multi-select facility dropdown and hide campaign type
+                facilityFormGroup.style.display = 'none';
+                multiSelectFacilityGroup.style.display = 'block';
+                
+                // Hide Campaign Type field
+                const campaignTypeGroup = document.getElementById('campaignType').closest('.form-group');
+                campaignTypeGroup.style.display = 'none';
+            } else {
+                // For Meta: Show single select facility dropdown and show campaign type
+                facilityFormGroup.style.display = 'block';
+                multiSelectFacilityGroup.style.display = 'none';
+                
+                // Show Campaign Type field
+                const campaignTypeGroup = document.getElementById('campaignType').closest('.form-group');
+                campaignTypeGroup.style.display = 'block';
+            }
+        }
+        
+        // Set up multi-select functionality
+        function setupMultiSelect() {
+            // Get references to the elements
+            const facilitySearch = document.getElementById('facility-search');
+            const facilityOptions = document.getElementById('facility-options');
+            const selectedFacilities = document.getElementById('selected-facilities');
+            const multiSelectDropdown = facilitySearch.closest('.multi-select-dropdown');
+            
+            // Toggle dropdown when clicking on input
+            facilitySearch.addEventListener('click', function(e) {
+                e.stopPropagation();
+                multiSelectDropdown.classList.toggle('active');
+                
+                // Force populate options if empty
+                if (facilityOptions.children.length === 0 && brandSelect.value) {
+                    populateMultiSelectOptions(brandSelect.value);
+                }
+            });
+            
+            // Close dropdown when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!multiSelectDropdown.contains(e.target)) {
+                    multiSelectDropdown.classList.remove('active');
+                }
+            });
+            
+            // Function to populate options
+            function populateMultiSelectOptions(brandValue) {
+                // Clear existing options
+                facilityOptions.innerHTML = '';
+                
+                console.log("Populating facilities for brand:", brandValue);
+                console.log("Facilities data:", facilities[brandValue]);
+                
+                if (brandValue && facilities[brandValue]) {
+                    facilities[brandValue].forEach(facility => {
+                        const checkboxItem = document.createElement('div');
+                        checkboxItem.className = 'checkbox-item';
+                        
+                        checkboxItem.innerHTML = `
+                            <label>
+                                <input type="checkbox" value="${facility.code}" data-name="${facility.name}">
+                                <span>${facility.code} - ${facility.name}</span>
+                            </label>
+                        `;
+                        
+                        facilityOptions.appendChild(checkboxItem);
+                        
+                        // Add click handler for checkbox
+                        const checkbox = checkboxItem.querySelector('input[type="checkbox"]');
+                        checkbox.addEventListener('change', function() {
+                            updateSelectedFacilities();
+                        });
+                    });
+                    
+                    console.log("Added", facilityOptions.children.length, "facility options");
+                } else {
+                    console.log("No facilities found for brand:", brandValue);
+                    // Add a message if no facilities
+                    const noOptions = document.createElement('div');
+                    noOptions.className = 'checkbox-item';
+                    noOptions.textContent = 'No facilities available. Please select a brand first.';
+                    facilityOptions.appendChild(noOptions);
+                }
+            }
+            
+            // Update selected facilities display
+            function updateSelectedFacilities() {
+                selectedFacilities.innerHTML = '';
+                const checkedBoxes = facilityOptions.querySelectorAll('input[type="checkbox"]:checked');
+                
+                let selectedText = '';
+                let facilityCodes = [];
+                
+                checkedBoxes.forEach((checkbox, index) => {
+                    if (index < 2) {
+                        selectedText += (index > 0 ? ', ' : '') + checkbox.dataset.name;
+                    }
+                    
+                    // Get facility code for this facility
+                    const facilityName = checkbox.dataset.name;
+                    const facilityValue = checkbox.value;
+                    
+                    // Try to find the facility code from the mapping
+                    let code = '';
+                    for (const key in facilityCodeMapping) {
+                        if (key.includes(facilityName) || facilityName.includes(key) || 
+                            key.includes(facilityValue) || facilityValue.includes(key)) {
+                            code = facilityCodeMapping[key];
+                            break;
+                        }
+                    }
+                    
+                    if (code) {
+                        facilityCodes.push(code);
+                    }
+                });
+                
+                if (checkedBoxes.length > 2) {
+                    selectedText += ` and ${checkedBoxes.length - 2} more`;
+                }
+                
+                facilitySearch.value = selectedText || 'Search or select facilities...';
+                
+                // Update the facility code input with comma-separated codes
+                const facilityCodeInput = document.getElementById('facilityCode');
+                if (facilityCodeInput) {
+                    facilityCodeInput.value = facilityCodes.join(', ');
+                }
+                
+                // Create selected item tags
+                checkedBoxes.forEach(checkbox => {
+                    const tag = document.createElement('div');
+                    tag.className = 'selected-tag';
+                    tag.textContent = checkbox.value;
+                    
+                    const removeBtn = document.createElement('span');
+                    removeBtn.className = 'remove-tag';
+                    removeBtn.innerHTML = '&times;';
+                    removeBtn.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        checkbox.checked = false;
+                        updateSelectedFacilities();
+                    });
+                    
+                    tag.appendChild(removeBtn);
+                    selectedFacilities.appendChild(tag);
+                });
+            }
+            
+            // Update multi-select when brand changes
+            brandSelect.addEventListener('change', function() {
+                console.log("Brand changed to:", this.value);
+                populateMultiSelectOptions(this.value);
+                updateSelectedFacilities();
+            });
+            
+            // Initial population if brand is already selected
+            if (brandSelect.value) {
+                console.log("Initial population with brand:", brandSelect.value);
+                populateMultiSelectOptions(brandSelect.value);
+            }
+            
+            // Add debugging to check if the multi-select is properly initialized
+            console.log("Multi-select setup complete. Elements found:", {
+                facilitySearch: !!facilitySearch,
+                facilityOptions: !!facilityOptions,
+                selectedFacilities: !!selectedFacilities,
+                multiSelectDropdown: !!multiSelectDropdown
+            });
+        }
+        
+        // Set up tab click handlers
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                // Remove active class from all tabs
+                tabs.forEach(t => t.classList.remove('active'));
+                
+                // Add active class to clicked tab
+                tab.classList.add('active');
+                
+                // Get platform from data attribute
+                const platform = tab.dataset.tab;
+                
+                // Update tab indicator position
+                if (platform === 'google') {
+                    tabsContainer.classList.add('google');
+                } else {
+                    tabsContainer.classList.remove('google');
+                }
+                
+                // Update form for selected platform
+                updateFormForPlatform(platform);
+            });
+        });
+        
+        // Initialize multi-select functionality
+        setupMultiSelect();
+        
+        // Initialize with Meta (default)
+        updateFormForPlatform('meta');
+    }
+
+    // Call this function after DOM is loaded
+    setupTabs();
+
+    // Call this after creating the multi-select elements
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add a small delay to ensure elements are fully rendered
+        setTimeout(() => {
+            document.querySelectorAll('.checkbox-item input[type="checkbox"]').forEach(checkbox => {
+                checkbox.style.width = '16px';
+                checkbox.style.height = '16px';
+                checkbox.style.margin = '0 10px 0 0';
+                checkbox.style.padding = '0';
+            });
+        }, 500);
+    });
+
+    // Add this function to your code to fix the dropdown positioning
+    function fixDropdownZIndexIssues() {
+        // Create a container at the end of the body for our dropdowns
+        const dropdownContainer = document.createElement('div');
+        dropdownContainer.id = 'floating-dropdown-container';
+        dropdownContainer.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 0;
+            pointer-events: none;
+            z-index: 999999;
+        `;
+        document.body.appendChild(dropdownContainer);
+        
+        // Function to position a clone of the dropdown
+        function showFloatingDropdown(originalDropdown) {
+            // Clear any existing floating dropdowns
+            const existingFloating = document.getElementById('current-floating-dropdown');
+            if (existingFloating) {
+                existingFloating.remove();
+            }
+            
+            // Clone the dropdown content
+            const dropdownContent = originalDropdown.querySelector('.multi-select-options');
+            if (!dropdownContent) return;
+            
+            const clone = dropdownContent.cloneNode(true);
+            clone.id = 'current-floating-dropdown';
+            
+            // Position the clone at the same position as the original
+            const rect = dropdownContent.getBoundingClientRect();
+            clone.style.cssText = `
+                position: absolute;
+                top: ${rect.top}px;
+                left: ${rect.left}px;
+                width: ${rect.width}px;
+                max-height: 250px;
+                overflow-y: auto;
+                background: white;
+                border: 2px solid #e0d0d8;
+                border-radius: 0 0 8px 8px;
+                box-shadow: 0 5px 15px rgba(139, 6, 72, 0.15);
+                z-index: 999999;
+                pointer-events: auto;
+                display: block;
+            `;
+            
+            // Add event listeners to checkboxes in the clone
+            const checkboxes = clone.querySelectorAll('input[type="checkbox"]');
+            checkboxes.forEach((checkbox, index) => {
+                const originalCheckbox = dropdownContent.querySelectorAll('input[type="checkbox"]')[index];
+                
+                // Sync the initial state
+                checkbox.checked = originalCheckbox.checked;
+                
+                // Sync changes from clone to original
+                checkbox.addEventListener('change', () => {
+                    originalCheckbox.checked = checkbox.checked;
+                    
+                    // Trigger change event on original
+                    const event = new Event('change');
+                    originalCheckbox.dispatchEvent(event);
+                    
+                    // Update facility codes based on selected facilities
+                    updateSelectedFacilities();
+                });
+            });
+            
+            dropdownContainer.appendChild(clone);
+            return clone;
+        }
+        
+        // Set up click handlers for facility search input
+        const facilitySearch = document.getElementById('facility-search');
+        if (facilitySearch) {
+            facilitySearch.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const dropdown = this.closest('.multi-select-dropdown');
+                
+                if (dropdown.classList.contains('active')) {
+                    // If already active, hide the floating dropdown
+                    const existingFloating = document.getElementById('current-floating-dropdown');
+                    if (existingFloating) {
+                        existingFloating.remove();
+                    }
+                    dropdown.classList.remove('active');
+                } else {
+                    // Close any active dropdowns
+                    document.querySelectorAll('.multi-select-dropdown.active').forEach(d => {
+                        d.classList.remove('active');
+                    });
+                    
+                    // Open this dropdown
+                    dropdown.classList.add('active');
+                    
+                    // Force populate options if needed
+                    const facilityOptions = document.getElementById('facility-options');
+                    if (facilityOptions && facilityOptions.children.length === 0 && brandSelect.value) {
+                        populateMultiSelectOptions(brandSelect.value);
+                    }
+                    
+                    // Create the floating version
+                    showFloatingDropdown(dropdown);
+                }
+            });
+        }
+        
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('#current-floating-dropdown') && 
+                !e.target.closest('.multi-select-dropdown')) {
+                
+                document.querySelectorAll('.multi-select-dropdown.active').forEach(d => {
+                    d.classList.remove('active');
+                });
+                
+                const existingFloating = document.getElementById('current-floating-dropdown');
+                if (existingFloating) {
+                    existingFloating.remove();
+                }
+            }
+        });
+    }
+
+    // Call this function after DOM is loaded
+    document.addEventListener('DOMContentLoaded', function() {
+        // Wait for other scripts to initialize
+        setTimeout(() => {
+            fixDropdownZIndexIssues();
+        }, 500);
+    });
 });
 
 // Create a more professional notification system
