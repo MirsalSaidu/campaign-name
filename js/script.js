@@ -570,11 +570,15 @@ document.addEventListener('DOMContentLoaded', function() {
         const campaignType = campaignTypeDropdown.value;
         const serviceName = serviceNameInput.value;
         
-        // Get the full facility name with code from the select option
-        let facilityFullName = "";
+        // Get just the short facility code from the select option
+        let facilityShortCode = "";
         if (facility) {
+            // Extract just the code part (e.g., "BMC" from "BMC - Burjeel Medical City")
             const selectedOption = facilitySelect.options[facilitySelect.selectedIndex];
-            facilityFullName = selectedOption.textContent; // This will be like "BMC - Burjeel Medical City"
+            const parts = selectedOption.textContent.split(' - ');
+            if (parts.length > 0) {
+                facilityShortCode = parts[0].trim();
+            }
         }
         
         // Extract the full year
@@ -634,9 +638,9 @@ document.addEventListener('DOMContentLoaded', function() {
         
         setTimeout(() => {
             // Updated format to match example:
-            // CAMP_BM10_BMC - Burjeel Medical City_JUN_2025_Q2_GEN_REACH_UAE_sasa
-            const specialtySegment = specialty ? `_${specialty}` : '_GEN'; // Default to GEN if no specialty
-            const generatedName = `${campaignType}_${facilityCode}_${facilityFullName}_${month}_${fullYear}_${quarter}${specialtySegment}_${objective}_${regionVal}_${serviceName}`;
+            // CAMP_BM10_BMC_JUN_2025_Q2_GEN_AWARE_UAE_ss
+            const specialtySegment = specialty ? specialty : 'GEN'; // Default to GEN if no specialty
+            const generatedName = `${campaignType}_${facilityCode}_${facilityShortCode}_${month}_${fullYear}_${quarter}_${specialtySegment}_${objective}_${regionVal}_${serviceName}`;
             
             resultElement.textContent = generatedName;
             resultContainer.classList.add('show');
