@@ -2,6 +2,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Data for facilities
     const facilities = {
         BUR: [
+            {code: "Burjeel Brand", name: "Burjeel All Brands"},
             {code: "BH Abu Dhabi", name: "Burjeel Hospital Abu Dhabi"},
             {code: "BDSC Reem", name: "Burjeel Day Surgery Center Al Reem Island"},
             {code: "BH Dubai", name: "Burjeel Hospital Dubai"},
@@ -18,6 +19,7 @@ document.addEventListener('DOMContentLoaded', function() {
             {code: "BMC Saadiyat", name: "Burjeel by the Beach Clinic Saadiyat Island"}
         ],
         LLH: [
+            {code: "LLH Brand", name: "LLH All Brands"},
             {code: "LLH Abu Dhabi", name: "LLH Hospital Abu Dhabi"},
             {code: "LLH Musaffah", name: "LLH Hospital Musaffah"},
             {code: "LLHM Musaffah", name: "LLH Medical Center Musaffah"},
@@ -29,6 +31,7 @@ document.addEventListener('DOMContentLoaded', function() {
             {code: "Lifecare", name: "LifeCare Hospital"}
         ],
         MED: [
+            {code: "Medeor Brand", name: "Medeor All Brands"},
             {code: "MED Abu Dhabi", name: "Medeor Hospital Abu Dhabi"},
             {code: "MED Dubai", name: "Medeor Hospital Dubai"},
             {code: "MedM Abu Dhabi", name: "Medeor Medical Center Abu Dhabi"}
@@ -446,6 +449,22 @@ document.addEventListener('DOMContentLoaded', function() {
     brandSelect.addEventListener('change', function() {
         const brandValue = this.value;
         facilitySelect.innerHTML = '<option value="">Select Facility</option>';
+        
+        // Set facility code to the brand code when only brand is selected
+        if (brandValue) {
+            // Map brand value to code
+            const brandCodes = {
+                "BUR": "BHL1", // Burjeel
+                "LLH": "LLH1", // LLH
+                "LFC": "LC01", // Lifecare
+                "MED": "MED1", // Medeor
+                "BMC": "BM10"  // Burjeel Medical City
+            };
+            facilityCodeInput.value = brandCodes[brandValue] || brandValue;
+        } else {
+            facilityCodeInput.value = '';
+        }
+        
         if (brandValue && facilities[brandValue]) {
             facilities[brandValue].forEach(facility => {
                 const option = document.createElement('option');
@@ -640,9 +659,13 @@ document.addEventListener('DOMContentLoaded', function() {
             serviceNameInput
         ];
         
-        // For Meta, add facility and campaign type validation
+        // For Meta, add facility validation but not facility code
         if (activePlatform === 'meta') {
-            baseControls.push(facilitySelect, campaignTypeDropdown);
+            baseControls.push(facilitySelect);
+            // Don't validate campaign type if not required
+            if (document.getElementById('campaignType').closest('.form-group').style.display !== 'none') {
+                baseControls.push(campaignTypeDropdown);
+            }
         }
         
         let allFieldsFilled = true;
@@ -673,15 +696,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
         
-        // Also validate that facility code was generated
-        if (!facilityCodeInput.value) {
-            facilityCodeInput.classList.add('is-invalid');
-            setTimeout(() => {
-                facilityCodeInput.classList.remove('is-invalid');
-            }, 600);
-            allFieldsFilled = false;
-        }
-        
         if (!allFieldsFilled) {
             showNotification('Required Fields', 'Please fill in all required fields', 'error');
             return;
@@ -694,14 +708,19 @@ document.addEventListener('DOMContentLoaded', function() {
             // Generate name based on platform
             const specialtySegment = specialty ? specialty : 'GEN';
             
-            let generatedName;
+            let nameParts = [];
             if (activePlatform === 'meta') {
                 // Meta format: CAMP_FacilityCode_FacilityShortCode_Month_Year_Quarter_Specialty_Objective_Region_ServiceName
-                generatedName = `${campaignType}_${facilityCode}_${facilityShortCode}_${month}_${fullYear}_${quarter}_${specialtySegment}_${objective}_${regionVal}_${serviceName}`;
+                nameParts = [campaignType, facilityCode, facilityShortCode, month, fullYear, quarter, 
+                            specialtySegment, objective, regionVal, serviceName];
             } else {
                 // Google Ads format: ServiceName_FacilityCodes_Month_Year_Quarter_Specialty_Objective_Region_FacilityDisplayName
-                generatedName = `${serviceName}_${facilityCode}_${month}_${fullYear}_${quarter}_${specialtySegment}_${objective}_${regionVal}_${facilityDisplayName}`;
+                nameParts = [serviceName, facilityCode, month, fullYear, quarter, specialtySegment, 
+                            objective, regionVal, facilityDisplayName];
             }
+            
+            // Filter out empty values and join with single underscores
+            const generatedName = nameParts.filter(part => part && part.trim() !== '').join('_');
             
             resultElement.textContent = generatedName;
             resultContainer.classList.add('show');
