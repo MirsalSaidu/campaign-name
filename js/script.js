@@ -584,48 +584,31 @@ document.addEventListener('DOMContentLoaded', function() {
         // Get the active platform
         const activePlatform = document.querySelector('.tab.active').dataset.tab;
         
-        // Get values based on platform
-        let facilityCode, facilityShortCode, facilityValue, facilityDisplayName;
+        // Get values based on platform - both now use multi-select
+        const checkedFacilities = document.querySelectorAll('#facility-options input[type="checkbox"]:checked');
         
-        if (activePlatform === 'meta') {
-            // Single facility for Meta
-            facilityValue = facilitySelect.value;
-            facilityCode = facilityCodeInput.value;
-            
-            // Get short code from selected option
-            if (facilityValue) {
-                const selectedOption = facilitySelect.options[facilitySelect.selectedIndex];
-                const parts = selectedOption.textContent.split(' - ');
-                facilityShortCode = parts[0].trim();
-                facilityDisplayName = facilityShortCode;
-            }
-        } else {
-            // Multiple facilities for Google Ads
-            const checkedFacilities = document.querySelectorAll('#facility-options input[type="checkbox"]:checked');
-            
-            if (checkedFacilities.length === 0) {
-                showNotification('Required Fields', 'Please select at least one facility', 'error');
-                return;
-            }
-            
-            // For Google Ads, get all facility codes and names
-            const facilityCodes = facilityCodeInput.value; // Already comma-separated
-            
-            // Get all selected facility names/codes for display
-            const facilityNames = [];
-            checkedFacilities.forEach(checkbox => {
-                facilityNames.push(checkbox.value); // Use the short code (e.g., "BH Abu Dhabi")
-            });
-            
-            // Use the first facility name with +N indicator if more than one
-            facilityDisplayName = facilityNames[0];
-            if (checkedFacilities.length > 1) {
-                facilityDisplayName += `+${checkedFacilities.length - 1}`;
-            }
-            
-            facilityCode = facilityCodes;
-            facilityShortCode = facilityDisplayName;
+        if (checkedFacilities.length === 0) {
+            showNotification('Required Fields', 'Please select at least one facility', 'error');
+            return;
         }
+        
+        // For both platforms, get all facility codes and names
+        const facilityCodes = facilityCodeInput.value; // Already comma-separated
+        
+        // Get all selected facility names/codes for display
+        const facilityNames = [];
+        checkedFacilities.forEach(checkbox => {
+            facilityNames.push(checkbox.value); // Use the short code (e.g., "BH Abu Dhabi")
+        });
+        
+        // Use the first facility name with +N indicator if more than one
+        let facilityDisplayName = facilityNames[0];
+        if (checkedFacilities.length > 1) {
+            facilityDisplayName += `+${checkedFacilities.length - 1}`;
+        }
+        
+        const facilityCode = facilityCodes;
+        const facilityShortCode = facilityDisplayName;
         
         // Get other values
         const month = monthSelect.value;
@@ -659,13 +642,9 @@ document.addEventListener('DOMContentLoaded', function() {
             serviceNameInput
         ];
         
-        // For Meta, add facility validation but not facility code
+        // For Meta, add campaign type validation
         if (activePlatform === 'meta') {
-            baseControls.push(facilitySelect);
-            // Don't validate campaign type if not required
-            if (document.getElementById('campaignType').closest('.form-group').style.display !== 'none') {
-                baseControls.push(campaignTypeDropdown);
-            }
+            baseControls.push(campaignTypeDropdown);
         }
         
         let allFieldsFilled = true;
@@ -684,16 +663,13 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
         
-        // For Google Ads, check if at least one facility is selected
-        if (activePlatform === 'google') {
-            const checkedFacilities = document.querySelectorAll('#facility-options input[type="checkbox"]:checked');
-            if (checkedFacilities.length === 0) {
-                allFieldsFilled = false;
-                document.getElementById('facility-search').classList.add('is-invalid');
-                setTimeout(() => {
-                    document.getElementById('facility-search').classList.remove('is-invalid');
-                }, 600);
-            }
+        // For both platforms, check if at least one facility is selected
+        if (checkedFacilities.length === 0) {
+            allFieldsFilled = false;
+            document.getElementById('facility-search').classList.add('is-invalid');
+            setTimeout(() => {
+                document.getElementById('facility-search').classList.remove('is-invalid');
+            }, 600);
         }
         
         if (!allFieldsFilled) {
@@ -1029,24 +1005,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 objectiveSelect.appendChild(option);
             });
             
-            // Toggle between single select and multi-select facility dropdowns
+            // Show multi-select facility dropdown for both platforms
             const facilityFormGroup = document.getElementById('facility').closest('.form-group');
             const multiSelectFacilityGroup = document.getElementById('multiSelectFacilityGroup');
             
+            // Always show multi-select for both Meta and Google Ads
+            facilityFormGroup.style.display = 'none';
+            multiSelectFacilityGroup.style.display = 'block';
+            
             if (platform === 'google') {
-                // For Google Ads: Show multi-select facility dropdown and hide campaign type
-                facilityFormGroup.style.display = 'none';
-                multiSelectFacilityGroup.style.display = 'block';
-                
-                // Hide Campaign Type field
+                // Hide Campaign Type field for Google Ads
                 const campaignTypeGroup = document.getElementById('campaignType').closest('.form-group');
                 campaignTypeGroup.style.display = 'none';
             } else {
-                // For Meta: Show single select facility dropdown and show campaign type
-                facilityFormGroup.style.display = 'block';
-                multiSelectFacilityGroup.style.display = 'none';
-                
-                // Show Campaign Type field
+                // Show Campaign Type field for Meta
                 const campaignTypeGroup = document.getElementById('campaignType').closest('.form-group');
                 campaignTypeGroup.style.display = 'block';
             }
