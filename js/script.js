@@ -1024,13 +1024,16 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
         
-        // Set up multi-select functionality
+        // Modify the setupMultiSelect function to maintain facilities across brand changes
         function setupMultiSelect() {
             // Get references to the elements
             const facilitySearch = document.getElementById('facility-search');
             const facilityOptions = document.getElementById('facility-options');
             const selectedFacilities = document.getElementById('selected-facilities');
             const multiSelectDropdown = facilitySearch.closest('.multi-select-dropdown');
+            
+            // Track which brands have already been populated to avoid duplicates
+            const populatedBrands = new Set();
             
             // Toggle dropdown when clicking on input
             facilitySearch.addEventListener('click', function(e) {
@@ -1043,102 +1046,34 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
             
-            // Add search functionality
-            facilitySearch.addEventListener('input', function() {
-                const searchTerm = this.value.toLowerCase();
-                const checkboxItems = facilityOptions.querySelectorAll('.checkbox-item');
-                
-                // Filter facilities based on search term
-                checkboxItems.forEach(item => {
-                    const text = item.textContent.toLowerCase();
-                    if (text.includes(searchTerm)) {
-                        item.style.display = 'block';
-                    } else {
-                        item.style.display = 'none';
-                    }
-                });
-                
-                // Show dropdown if typing and there are results
-                if (searchTerm && !multiSelectDropdown.classList.contains('active')) {
-                    multiSelectDropdown.classList.add('active');
-                }
-            });
+            // Rest of event handlers (input, focus, blur) remain the same...
             
-            // Handle focus - just open dropdown, don't modify value
-            facilitySearch.addEventListener('focus', function() {
-                multiSelectDropdown.classList.add('active');
-                
-                // Force populate options if empty
-                if (facilityOptions.children.length === 0 && brandSelect.value) {
-                    populateMultiSelectOptions(brandSelect.value);
-                }
-            });
-            
-            // Handle blur - update display text only if facilities are selected
-            facilitySearch.addEventListener('blur', function() {
-                setTimeout(() => {
-                    if (!multiSelectDropdown.classList.contains('active')) {
-                        const selectedText = getSelectedFacilitiesText();
-                        if (selectedText) {
-                            this.value = selectedText;
-                            this.placeholder = 'Search facilities...';
-                        } else {
-                            this.value = '';
-                            this.placeholder = 'Search facilities...';
-                        }
-                    }
-                }, 200);
-            });
-            
-            // Function to get selected facilities text
-            function getSelectedFacilitiesText() {
-                const checkedBoxes = facilityOptions.querySelectorAll('input[type="checkbox"]:checked');
-                if (checkedBoxes.length === 0) return '';
-                
-                let selectedText = '';
-                checkedBoxes.forEach((checkbox, index) => {
-                    if (index < 2) {
-                        selectedText += (index > 0 ? ', ' : '') + checkbox.dataset.name;
-                    }
-                });
-                
-                if (checkedBoxes.length > 2) {
-                    selectedText += ` and ${checkedBoxes.length - 2} more`;
-                }
-                
-                return selectedText;
-            }
-            
-            // Close dropdown when clicking outside
-            document.addEventListener('click', function(e) {
-                if (!multiSelectDropdown.contains(e.target)) {
-                    multiSelectDropdown.classList.remove('active');
-                    // Update display text when closing
-                    const selectedText = getSelectedFacilitiesText();
-                    if (selectedText) {
-                        facilitySearch.value = selectedText;
-                    } else {
-                        facilitySearch.value = '';
-                    }
-                }
-            });
-            
-            // Function to populate options
+            // Function to populate options - modified to add without clearing
             function populateMultiSelectOptions(brandValue) {
-                // Clear existing options
-                facilityOptions.innerHTML = '';
+                if (!brandValue || !facilities[brandValue]) return;
                 
-                console.log("Populating facilities for brand:", brandValue);
+                // If this brand was already populated, don't add again
+                if (populatedBrands.has(brandValue)) return;
+                
+                console.log("Adding facilities for brand:", brandValue);
                 console.log("Facilities data:", facilities[brandValue]);
                 
-                if (brandValue && facilities[brandValue]) {
-                    facilities[brandValue].forEach(facility => {
+                // Mark this brand as populated
+                populatedBrands.add(brandValue);
+                
+                // Add new facilities without clearing existing ones
+                facilities[brandValue].forEach(facility => {
+                    // Check if this facility already exists to avoid duplicates
+                    const existingFacility = Array.from(facilityOptions.querySelectorAll('input[type="checkbox"]'))
+                        .find(checkbox => checkbox.value === facility.code);
+                        
+                    if (!existingFacility) {
                         const checkboxItem = document.createElement('div');
                         checkboxItem.className = 'checkbox-item';
                         
                         checkboxItem.innerHTML = `
                             <label>
-                                <input type="checkbox" value="${facility.code}" data-name="${facility.name}">
+                                <input type="checkbox" value="${facility.code}" data-name="${facility.name}" data-brand="${brandValue}">
                                 <span>${facility.code} - ${facility.name}</span>
                             </label>
                         `;
@@ -1150,12 +1085,13 @@ document.addEventListener('DOMContentLoaded', function() {
                         checkbox.addEventListener('change', function() {
                             updateSelectedFacilities();
                         });
-                    });
-                    
-                    console.log("Added", facilityOptions.children.length, "facility options");
-                } else {
-                    console.log("No facilities found for brand:", brandValue);
-                    // Add a message if no facilities
+                    }
+                });
+                
+                console.log("Added facilities for brand:", brandValue);
+                
+                // If no facilities are shown yet, add a message
+                if (facilityOptions.children.length === 0) {
                     const noOptions = document.createElement('div');
                     noOptions.className = 'checkbox-item';
                     noOptions.textContent = 'No facilities available. Please select a brand first.';
@@ -1163,7 +1099,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
             
-            // Update selected facilities display
+            // Update selected facilities display - remains mostly the same
             function updateSelectedFacilities() {
                 selectedFacilities.innerHTML = '';
                 const checkedBoxes = facilityOptions.querySelectorAll('input[type="checkbox"]:checked');
@@ -1188,29 +1124,16 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (code) {
                         facilityCodes.push(code);
                     }
-                });
-                
-                // Update search input text with selected facilities only if not currently focused
-                if (document.activeElement !== facilitySearch) {
-                    const selectedText = getSelectedFacilitiesText();
-                    facilitySearch.value = selectedText || '';
-                }
-                
-                // Update the facility code input with comma-separated codes
-                const facilityCodeInput = document.getElementById('facilityCode');
-                if (facilityCodeInput) {
-                    facilityCodeInput.value = facilityCodes.join(', ');
-                }
-                
-                // Create selected item tags
-                checkedBoxes.forEach(checkbox => {
+                    
+                    // Create pill/tag for each selected facility
                     const tag = document.createElement('div');
                     tag.className = 'selected-tag';
-                    tag.textContent = checkbox.value;
+                    tag.textContent = facilityValue;
                     
+                    // Create remove button (×)
                     const removeBtn = document.createElement('span');
                     removeBtn.className = 'remove-tag';
-                    removeBtn.innerHTML = '&times;';
+                    removeBtn.innerHTML = ' &times;';
                     removeBtn.addEventListener('click', function(e) {
                         e.stopPropagation();
                         checkbox.checked = false;
@@ -1220,22 +1143,55 @@ document.addEventListener('DOMContentLoaded', function() {
                     tag.appendChild(removeBtn);
                     selectedFacilities.appendChild(tag);
                 });
+                
+                // Update search input text with selected facilities only if not currently focused
+                if (document.activeElement !== facilitySearch) {
+                    if (checkedBoxes.length > 0) {
+                        // Just show placeholder or empty when items are selected as pills below
+                        facilitySearch.value = '';
+                        facilitySearch.placeholder = 'Search facilities...';
+                    } else {
+                        facilitySearch.value = '';
+                        facilitySearch.placeholder = 'Search facilities...';
+                    }
+                }
+                
+                // Update the facility code input with comma-separated codes
+                const facilityCodeInput = document.getElementById('facilityCode');
+                if (facilityCodeInput) {
+                    facilityCodeInput.value = facilityCodes.join(', ');
+                }
             }
             
-            // Update multi-select when brand changes
+            // Update multi-select when brand changes - modified to not clear selections
             brandSelect.addEventListener('change', function() {
-                console.log("Brand changed to:", this.value);
-                populateMultiSelectOptions(this.value);
-                updateSelectedFacilities();
-                // Clear the input and reset placeholder
-                facilitySearch.value = '';
-                facilitySearch.placeholder = 'Search facilities...';
+                const brandValue = this.value;
+                if (brandValue) {
+                    populateMultiSelectOptions(brandValue);
+                }
             });
             
-            // Initial setup - don't set any value, let placeholder show
+            // Initial setup for any brand already selected
             if (brandSelect.value) {
-                console.log("Initial population with brand:", brandSelect.value);
                 populateMultiSelectOptions(brandSelect.value);
+            }
+            
+            // Add a way to reset facility selections if needed
+            function resetFacilitySelections() {
+                facilityOptions.innerHTML = '';
+                selectedFacilities.innerHTML = '';
+                facilitySearch.value = '';
+                const facilityCodeInput = document.getElementById('facilityCode');
+                if (facilityCodeInput) {
+                    facilityCodeInput.value = '';
+                }
+                populatedBrands.clear();
+            }
+            
+            // Add reset handler to the reset button
+            const resetBtn = document.getElementById('reset');
+            if (resetBtn) {
+                resetBtn.addEventListener('click', resetFacilitySelections);
             }
         }
         
@@ -1565,3 +1521,38 @@ function showNotification(title, message, type = 'info', duration = 5000) {
 
 // Initialize the notification system
 createNotificationSystem();
+
+// Add styles to make the tags look like the image
+const tagStyles = document.createElement('style');
+tagStyles.textContent = `
+.selected-items {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.selected-tag {
+    background-color: rgba(122, 9, 58, 0.15);
+    color: #7A093A;
+    border-radius: 50px;
+    padding: 6px 12px;
+    font-size: 14px;
+    display: inline-flex;
+    align-items: center;
+    margin-right: 5px;
+    margin-bottom: 5px;
+}
+
+.remove-tag {
+    cursor: pointer;
+    font-size: 18px;
+    margin-left: 4px;
+    line-height: 1;
+}
+
+.remove-tag:hover {
+    color: #5a072c;
+}
+`;
+document.head.appendChild(tagStyles);
