@@ -37,7 +37,9 @@ document.addEventListener('DOMContentLoaded', function() {
             {code: "MedM Abu Dhabi", name: "Medeor Medical Center Abu Dhabi"}
         ],
         BMC: [
-            {code: "BMC", name: "Burjeel Medical City"}
+            {code: "BMC", name: "Burjeel Medical City"},
+            {code: "BCI", name: "Burjeel Cancer Institute"},
+            {code: "IVF", name: "Trust Fertility Clinic"}
         ]
     };
 
@@ -168,6 +170,8 @@ document.addEventListener('DOMContentLoaded', function() {
         "Burjeel Hospital Abu Dhabi": "BU10",
         "Burjeel Medical City": "BM10",
         "Burjeel Medical City Abu Dhabi": "BM10",
+        "Burjeel Cancer Institute": "BM10",
+        "Trust Fertility Clinic": "BM11",
         "BMC": "BM10",
         "Burjeel Day Surgery Center Al Reem Island": "BN01",
         "BDSC Reem": "BN01",
