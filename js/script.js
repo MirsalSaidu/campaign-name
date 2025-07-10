@@ -194,11 +194,12 @@ document.addEventListener('DOMContentLoaded', function() {
         "BMC Barari": "BM03",
         "Burjeel Medical Centre Al Zeina Al Raha Beach": "MC03",
         "BMC Al Zeina": "MC03",
-        "Barari for One Day Surgery Center Al Ain": "BN 05",
-        "BDSC Barari": "BN 05",
-        "Burjeel Day Surgery Centre Al Dhafra": "BN 03",
-        "BDSC Dhafra": "BN 03",
+        "Barari for One Day Surgery Center Al Ain": "BN05",
+        "BDSC Barari": "BN05",
+        "Burjeel Day Surgery Centre Al Dhafra": "BN03",
+        "BDSC Dhafra": "BN03",
         "Burjeel by the Beach Clinic Saadiyat Island": "BM08",
+        "BMC Saadiyat": "BM08",
         "Medeor Hospital Abu Dhabi": "MH01",
         "MED Abu Dhabi": "MH01",
         "Medeor Hospital Dubai": "MH02",
@@ -602,7 +603,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         // Get facility codes
-        const facilityCodes = facilityCodeInput.value; // Already comma-separated
+        const facilityCodesRaw = facilityCodeInput.value; // Comma-separated from input
+        const facilityCodesUnderscore = facilityCodesRaw.replace(/,\s*/g, '_');
         
         // Create a better display name for facilities
         // Instead of using "BH Abu Dhabi+2", use proper format like "BM10+4"
@@ -690,14 +692,92 @@ document.addEventListener('DOMContentLoaded', function() {
         setTimeout(() => {
             // Generate name based on platform
             let nameParts = [];
+
+            // Detect if a brand-level facility (e.g., "Burjeel Brand") is the only selection
+            const isBrandLevel =
+                selectedFacilities.length === 1 &&
+                (/brand/i.test(selectedFacilities[0].code) || /brand/i.test(selectedFacilities[0].name));
+
+            // Prepare brand segment if needed
+            let brandSegment = '';
+            if (isBrandLevel) {
+                const brandText = brandSelect.options[brandSelect.selectedIndex]?.textContent || '';
+                const brandName = brandText.split(' - ')[1]?.trim() || brandText.trim();
+                brandSegment = `Brand-${brandName}`;
+            }
+
             if (activePlatform === 'meta') {
-                // Meta format: CAMP_FacilityCodes_FacilityDisplay_Month_Year_Quarter_Specialty_Objective_Region_ServiceName
-                nameParts = [campaignType, facilityCodes, facilityDisplayName, month, fullYear, quarter, 
-                            specialty, objective, regionVal, serviceName];
+                if (isBrandLevel) {
+                    // brand-level already handled
+                    nameParts = [
+                        campaignType,
+                        brandSegment,
+                        month,
+                        fullYear,
+                        quarter,
+                        specialty,
+                        objective,
+                        regionVal,
+                        serviceName
+                    ];
+                } else if (selectedFacilities.length === 1) {
+                    // Single facility format: CODE-SHORTCODE
+                    const singleFacilitySegment = `${facilityCodesUnderscore}-${facilityDisplayName}`;
+
+                    nameParts = [
+                        campaignType,
+                        singleFacilitySegment,
+                        month,
+                        fullYear,
+                        quarter,
+                        specialty,
+                        objective,
+                        regionVal,
+                        serviceName
+                    ];
+                } else {
+                    // Multiple facilities format: codes joined by '_' then '-' then display name
+                    const multiFacilitySegment = `${facilityCodesUnderscore}-${facilityDisplayName}`;
+
+                    nameParts = [
+                        campaignType,
+                        multiFacilitySegment,
+                        month,
+                        fullYear,
+                        quarter,
+                        specialty,
+                        objective,
+                        regionVal,
+                        serviceName
+                    ];
+                }
             } else {
-                // Google Ads format: ServiceName_FacilityCodes_Month_Year_Quarter_Specialty_Objective_Region_FacilityDisplay
-                nameParts = [serviceName, facilityCodes, month, fullYear, quarter, specialty, 
-                            objective, regionVal, facilityDisplayName];
+                if (isBrandLevel) {
+                    // Brand-level Google Ads format: ServiceName_Month_Year_Quarter_Specialty_Objective_Region_Brand-Name
+                    nameParts = [
+                        serviceName,
+                        month,
+                        fullYear,
+                        quarter,
+                        specialty,
+                        objective,
+                        regionVal,
+                        brandSegment
+                    ];
+                } else {
+                    // Regular Google Ads format with facility codes (underscore-separated)
+                    nameParts = [
+                        serviceName,
+                        facilityCodesUnderscore,
+                        month,
+                        fullYear,
+                        quarter,
+                        specialty,
+                        objective,
+                        regionVal,
+                        facilityDisplayName
+                    ];
+                }
             }
             
             // Filter out empty values and join with single underscores
@@ -1177,20 +1257,56 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // Use the map to create selected facility tags
                 for (const [code, facility] of selectedFacilityMap.entries()) {
-                    // Try to find the facility code from the mapping
+                    // Resolve the matching facility code more robustly
                     let facilityCode = '';
-                    for (const key in facilityCodeMapping) {
-                        if (key.includes(facility.name) || facility.name.includes(key) || 
-                            key.includes(facility.code) || facility.code.includes(key)) {
-                            facilityCode = facilityCodeMapping[key];
-                            break;
+
+                    // 1) Exact key match with facility.code (e.g., "BMC Saadiyat")
+                    if (facilityCodeMapping[facility.code]) {
+                        facilityCode = facilityCodeMapping[facility.code];
+                    }
+
+                    // 2) Exact key match with facility.name
+                    if (!facilityCode && facilityCodeMapping[facility.name]) {
+                        facilityCode = facilityCodeMapping[facility.name];
+                    }
+
+                    // 3) Case-insensitive exact match
+                    if (!facilityCode) {
+                        const nameLower = facility.name.toLowerCase();
+                        const codeLower = facility.code.toLowerCase();
+                        for (const key in facilityCodeMapping) {
+                            const keyLower = key.toLowerCase();
+                            if (keyLower === nameLower || keyLower === codeLower) {
+                                facilityCode = facilityCodeMapping[key];
+                                break;
+                            }
                         }
                     }
-                    
+
+                    // 4) Longest partial match fallback (avoids generic short keys like "BMC" winning)
+                    if (!facilityCode) {
+                        let bestKey = '';
+                        for (const key in facilityCodeMapping) {
+                            if (
+                                facility.name.includes(key) ||
+                                key.includes(facility.name) ||
+                                facility.code.includes(key) ||
+                                key.includes(facility.code)
+                            ) {
+                                if (key.length > bestKey.length) {
+                                    bestKey = key;
+                                }
+                            }
+                        }
+                        if (bestKey) {
+                            facilityCode = facilityCodeMapping[bestKey];
+                        }
+                    }
+
                     if (facilityCode) {
                         facilityCodes.push(facilityCode);
                     }
-                    
+
                     // Create pill/tag for each selected facility
                     const tag = document.createElement('div');
                     tag.className = 'selected-tag';
