@@ -1142,6 +1142,31 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
             
+            // Add search functionality to filter facilities
+            facilitySearch.addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase();
+                const checkboxItems = facilityOptions.querySelectorAll('.checkbox-item');
+                let hasVisibleItems = false;
+                
+                checkboxItems.forEach(item => {
+                    const label = item.querySelector('label span');
+                    if (label) {
+                        const text = label.textContent.toLowerCase();
+                        if (text.includes(searchTerm)) {
+                            item.style.display = '';
+                            hasVisibleItems = true;
+                        } else {
+                            item.style.display = 'none';
+                        }
+                    }
+                });
+                
+                // Show dropdown if searching and results exist
+                if (!multiSelectDropdown.classList.contains('active') && hasVisibleItems && searchTerm) {
+                    multiSelectDropdown.classList.add('active');
+                }
+            });
+            
             // ADD BACK: Close dropdown when clicking outside
             document.addEventListener('click', function(e) {
                 if (!e.target.closest('.multi-select-dropdown')) {
@@ -1526,6 +1551,46 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                     
                     // Create the floating version
+                    showFloatingDropdown(dropdown);
+                }
+            });
+            
+            // Add search functionality for the floating dropdown
+            facilitySearch.addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase();
+                const facilityOptions = document.getElementById('facility-options');
+                const checkboxItems = facilityOptions.querySelectorAll('.checkbox-item');
+                let hasVisibleItems = false;
+                
+                checkboxItems.forEach(item => {
+                    const label = item.querySelector('label span');
+                    if (label) {
+                        const text = label.textContent.toLowerCase();
+                        if (text.includes(searchTerm)) {
+                            item.style.display = '';
+                            hasVisibleItems = true;
+                        } else {
+                            item.style.display = 'none';
+                        }
+                    }
+                });
+                
+                // Update floating dropdown if it exists
+                const floatingDropdown = document.getElementById('current-floating-dropdown');
+                if (floatingDropdown) {
+                    const floatingCheckboxItems = floatingDropdown.querySelectorAll('.checkbox-item');
+                    floatingCheckboxItems.forEach((item, index) => {
+                        const originalItem = checkboxItems[index];
+                        if (originalItem) {
+                            item.style.display = originalItem.style.display;
+                        }
+                    });
+                }
+                
+                // Show dropdown if searching and results exist
+                const dropdown = this.closest('.multi-select-dropdown');
+                if (!dropdown.classList.contains('active') && hasVisibleItems && searchTerm) {
+                    dropdown.classList.add('active');
                     showFloatingDropdown(dropdown);
                 }
             });
