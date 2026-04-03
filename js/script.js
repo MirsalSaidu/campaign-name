@@ -1047,14 +1047,12 @@ document.addEventListener('DOMContentLoaded', function() {
             <label for="multiSelectFacility">Facilities (Multiple Selection)</label>
             <div class="multi-select-dropdown">
                 <div class="multi-select-input">
+                    <div class="selected-items" id="selected-facilities"></div>
                     <input type="text" id="facility-search" placeholder="Search facilities...">
                     <span class="dropdown-icon"><i class="fas fa-chevron-down"></i></span>
                 </div>
                 <div class="multi-select-options" id="facility-options">
                     <!-- Will be populated by JavaScript -->
-                </div>
-                <div class="selected-items" id="selected-facilities">
-                    <!-- Selected items will appear here -->
                 </div>
             </div>
         </div>
