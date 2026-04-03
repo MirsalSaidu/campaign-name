@@ -495,7 +495,7 @@ document.addEventListener('DOMContentLoaded', function() {
             facilities[brandValue].forEach(facility => {
                 const option = document.createElement('option');
                 option.value = facility.code;
-                option.textContent = `${facility.code} - ${facility.name}`;
+                option.textContent = facility.name;
                 facilitySelect.appendChild(option);
             });
         }
@@ -1222,7 +1222,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     checkboxItem.innerHTML = `
                         <label>
                             <input type="checkbox" value="${facility.code}" data-name="${facility.name}" data-brand="${brandValue}" ${isSelected ? 'checked' : ''}>
-                            <span>${facility.code} - ${facility.name}</span>
+                            <span>${facility.name}</span>
                         </label>
                     `;
                     
