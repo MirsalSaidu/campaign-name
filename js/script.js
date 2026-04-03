@@ -6,42 +6,52 @@ document.addEventListener('DOMContentLoaded', function() {
     const facilities = {
         BUR: [
             {code: "Burjeel Brand", name: "Burjeel All Brands"},
-            {code: "BH Abu Dhabi", name: "Burjeel Hospital Abu Dhabi"},
-            {code: "BDSC Reem", name: "Burjeel Day Surgery Center Al Reem Island"},
-            {code: "BH Dubai", name: "Burjeel Hospital Dubai"},
-            {code: "BH Sharjah", name: "Burjeel Specialty Hospital Sharjah"},
-            {code: "BRH Al Ain", name: "Burjeel Royal Hospital Al Ain"},
-            {code: "BRH Asharej", name: "Burjeel Royal Asharej Al Ain"},
-            {code: "BMC Shamkha", name: "Burjeel Medical Center, Al Shamkha, Makani Mall"},
-            {code: "BDSC Shahama", name: "Burjeel Day Surgery Center, Al Shahama Deerfields Mall"},
-            {code: "BMC Marina", name: "Burjeel Medical Centre Al Marina"},
-            {code: "BMC Barari", name: "Burjeel Medical Center, Barari, Al Ain"},
-            {code: "BMC Al Zeina", name: "Burjeel Medical Centre, Al Zeina, Al Raha Beach"},
-            {code: "BDSC Barari", name: "Barari for One Day Surgery Center Al Ain"},
-            {code: "BDSC Dhafra", name: "Burjeel Day Surgery Centre Al Dhafra"},
-            {code: "BMC Saadiyat", name: "Burjeel by the Beach Clinic Saadiyat Island"}
+            {code: "BHL1", name: "Burjeel Holdings"},
+            {code: "", name: "Burjeel Hospital"},
+            {code: "BU10", name: "Burjeel Hospital Abu Dhabi"},
+            {code: "", name: "Burjeel Al Ain"},
+            {code: "BN01", name: "Burjeel Day Surgery Center Al Reem Island"},
+            {code: "DU10", name: "Burjeel Hospital Dubai"},
+            {code: "BS10", name: "Burjeel Specialty Hospital Sharjah"},
+            {code: "BR10", name: "Burjeel Royal Hospital Al Ain"},
+            {code: "BA01", name: "Burjeel Royal Asharej Al Ain"},
+            {code: "BM02", name: "Burjeel Medical Center Al Shamkha"},
+            {code: "BM01", name: "Burjeel Day Surgery Center Al Shahama"},
+            {code: "HP01", name: "Burjeel Medical Centre Al Marina"},
+            {code: "BM03", name: "Burjeel Medical Center Barari Al Ain"},
+            {code: "MC03", name: "Burjeel Medical Centre Al Zeina"},
+            {code: "BN05", name: "Burjeel One Day Surgery Center Al Ain"},
+            {code: "BN03", name: "Burjeel Day Surgery Centre Al Dhafra"},
+            {code: "BM08", name: "Burjeel by the Beach Saadiyat Island"}
         ],
         LLH: [
             {code: "LLH Brand", name: "LLH All Brands"},
-            {code: "LLH Abu Dhabi", name: "LLH Hospital Abu Dhabi"},
-            {code: "LLH Musaffah", name: "LLH Hospital Musaffah"},
-            {code: "LLHM Musaffah", name: "LLH Medical Center Musaffah"},
-            {code: "LLH Oasis", name: "LLH Oasis Medical centre Madinat Zayed"},
-            {code: "LLHM Al Ain", name: "LLH Medical Centre Al Ain"},
-            {code: "LLHM Al Najda", name: "LLH Medical Centre Al Najda, Abu Dhabi"}
+            {code: "", name: "LLH Hospital"},
+            {code: "LH10", name: "LLH Hospital Abu Dhabi"},
+            {code: "LL01", name: "LLH Hospital Musaffah"},
+            {code: "LL02", name: "LLH Medical Center Musaffah"},
+            {code: "LL05", name: "LLH Oasis Medical Centre Madinat Zayed"},
+            {code: "LL13", name: "LLH Medical Centre Al Ain"},
+            {code: "LL18", name: "LLH Medical Centre Al Najda, Abu Dhabi"}
         ],
         LFC: [
-            {code: "Lifecare", name: "LifeCare Hospital"}
+            {code: "LC01", name: "Lifecare Hospital Musaffah"}
         ],
         MED: [
             {code: "Medeor Brand", name: "Medeor All Brands"},
-            {code: "MED Abu Dhabi", name: "Medeor Hospital Abu Dhabi"},
-            {code: "MED Dubai", name: "Medeor Hospital Dubai"},
-            {code: "MedM Abu Dhabi", name: "Medeor Medical Center Abu Dhabi"}
+            {code: "MH01", name: "Medeor Hospital Abu Dhabi"},
+            {code: "MH02", name: "Medeor Hospital Dubai"},
+            {code: "MM01", name: "Medeor Medical Center Abu Dhabi"}
         ],
         BMC: [
-            {code: "BMC", name: "Burjeel Medical City"},
+            {code: "BM10", name: "Burjeel Medical City Abu Dhabi"},
             {code: "IVF", name: "Trust Fertility Clinic"}
+        ],
+        TAJ: [
+            {code: "", name: "Tajmeel"}
+        ],
+        HIM: [
+            {code: "", name: "Himmah Rehab"}
         ]
     };
 
@@ -225,7 +235,12 @@ document.addEventListener('DOMContentLoaded', function() {
         "Tajmeel Clinic - Shahama Abu Dhabi": "TM03",
         "Tajmeel Clinic – Barari Mall Al Ain": "TM04",
         "Tajmeel Clinic - Sheikh Zayed Road Dubai": "TM05",
-        "Tajmeel Royal Dental Clinic Abu Dhabi": "TM06"
+        "Tajmeel Royal Dental Clinic Abu Dhabi": "TM06",
+        "Burjeel Hospital": "",
+        "Burjeel Al Ain": "",
+        "LLH Hospital": "",
+        "Tajmeel": "",
+        "Himmah Rehab": ""
     };
 
     // Create the facility code field HTML
