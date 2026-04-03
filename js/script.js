@@ -22,7 +22,9 @@ document.addEventListener('DOMContentLoaded', function() {
             {code: "MC03", name: "Burjeel Medical Centre Al Zeina"},
             {code: "BN05", name: "Burjeel One Day Surgery Center Al Ain"},
             {code: "BN03", name: "Burjeel Day Surgery Centre Al Dhafra"},
-            {code: "BM08", name: "Burjeel by the Beach Saadiyat Island"}
+            {code: "BM08", name: "Burjeel by the Beach Saadiyat Island"},
+            {code: "", name: "Burjeel Medical Centre, Al Falah"},
+            {code: "", name: "Burjeel Medical Center, Dubai Silicon Oasis"}
         ],
         LLH: [
             {code: "LLH Brand", name: "LLH All Brands"},
