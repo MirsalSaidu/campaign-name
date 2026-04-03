@@ -1299,50 +1299,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // Use the map to create selected facility tags
                 for (const [code, facility] of selectedFacilityMap.entries()) {
-                    // Resolve the matching facility code more robustly
-                    let facilityCode = '';
+                    // Use the facility code directly from the facilities data
+                    let facilityCode = facility.code || '';
 
-                    // 1) Exact key match with facility.code (e.g., "BMC Saadiyat")
-                    if (facilityCodeMapping[facility.code]) {
-                        facilityCode = facilityCodeMapping[facility.code];
-                    }
-
-                    // 2) Exact key match with facility.name
+                    // If no code in the data, fall back to facilityCodeMapping by name
                     if (!facilityCode && facilityCodeMapping[facility.name]) {
                         facilityCode = facilityCodeMapping[facility.name];
-                    }
-
-                    // 3) Case-insensitive exact match
-                    if (!facilityCode) {
-                        const nameLower = facility.name.toLowerCase();
-                        const codeLower = facility.code.toLowerCase();
-                        for (const key in facilityCodeMapping) {
-                            const keyLower = key.toLowerCase();
-                            if (keyLower === nameLower || keyLower === codeLower) {
-                                facilityCode = facilityCodeMapping[key];
-                                break;
-                            }
-                        }
-                    }
-
-                    // 4) Longest partial match fallback (avoids generic short keys like "BMC" winning)
-                    if (!facilityCode) {
-                        let bestKey = '';
-                        for (const key in facilityCodeMapping) {
-                            if (
-                                facility.name.includes(key) ||
-                                key.includes(facility.name) ||
-                                facility.code.includes(key) ||
-                                key.includes(facility.code)
-                            ) {
-                                if (key.length > bestKey.length) {
-                                    bestKey = key;
-                                }
-                            }
-                        }
-                        if (bestKey) {
-                            facilityCode = facilityCodeMapping[bestKey];
-                        }
                     }
 
                     if (facilityCode) {
