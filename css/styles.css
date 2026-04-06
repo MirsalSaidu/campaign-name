@@ -624,7 +624,9 @@ select.form-control {
 
 /* Search inside dropdown panel */
 .facility-search-wrap {
-    position: relative;
+    position: sticky;
+    top: 0;
+    z-index: 1;
     padding: 10px 12px;
     border-bottom: 1px solid var(--border-color);
     background: #fafafa;
@@ -713,8 +715,9 @@ select.form-control {
 .selected-tag {
     background-color: var(--accent-color);
     color: var(--primary-dark);
-    padding: 4px 10px;
+    padding: 5px 12px;
     border-radius: 16px;
+    font-size: 13px;
     font-size: 14px;
     display: inline-flex;
     align-items: center;
