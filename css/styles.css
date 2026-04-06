@@ -581,50 +581,91 @@ select.form-control {
     left: 50%;
 }
 
-/* Add styles for multi-select dropdown */
+/* Multi-select dropdown */
 .multi-select-dropdown {
     position: relative;
     width: 100%;
     z-index: 9000;
 }
 
-.multi-select-input {
-    position: relative;
+/* Trigger — looks like a normal select */
+.multi-select-trigger {
     display: flex;
     align-items: center;
-}
-
-.multi-select-input input {
-    width: 100%;
+    justify-content: space-between;
     padding: 12px 15px;
-    border: 2px solid var(--border-color);
+    border: 2px solid #c8b0bc;
     border-radius: 8px;
-    font-size: 16px;
-    transition: all 0.3s ease;
     background-color: #fff;
     cursor: pointer;
+    font-size: 16px;
+    color: var(--text-color);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    user-select: none;
+    height: 50px;
+    box-sizing: border-box;
 }
 
-.multi-select-input input:focus {
+.multi-select-trigger:hover,
+.multi-select-dropdown.active .multi-select-trigger {
     border-color: var(--primary-color);
-    outline: none;
     box-shadow: 0 0 0 3px rgba(139, 6, 72, 0.2);
+}
+
+.trigger-placeholder {
+    color: #aaa;
+    font-size: 15px;
+}
+
+.trigger-placeholder.has-selection {
+    color: var(--text-color);
+    font-weight: 500;
+}
+
+/* Search inside dropdown panel */
+.facility-search-wrap {
+    position: relative;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border-color);
+    background: #fafafa;
+}
+
+.facility-search-icon {
+    position: absolute;
+    left: 22px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #aaa;
+    font-size: 13px;
+}
+
+.facility-search-wrap input {
+    width: 100%;
+    padding: 7px 10px 7px 28px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 14px;
+    outline: none;
+    background: #fff;
+}
+
+.facility-search-wrap input:focus {
+    border-color: var(--primary-color);
 }
 
 .multi-select-options {
     position: absolute;
-    top: 100%;
+    top: calc(100% + 4px);
     left: 0;
     width: 100%;
-    max-height: 250px;
+    max-height: 260px;
     overflow-y: auto;
     background: white;
     border: 2px solid var(--border-color);
-    border-radius: 0 0 8px 8px;
+    border-radius: 8px;
     z-index: 9999;
-    box-shadow: 0 5px 15px var(--shadow-color);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.12);
     display: none;
-    margin-top: 5px;
 }
 
 .multi-select-dropdown.active {
@@ -665,8 +706,8 @@ select.form-control {
 .selected-items {
     display: flex;
     flex-wrap: wrap;
-    gap: 5px;
-    margin-top: 10px;
+    gap: 6px;
+    margin-top: 8px;
 }
 
 .selected-tag {
