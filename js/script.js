@@ -7,7 +7,6 @@ document.addEventListener('DOMContentLoaded', function() {
         BUR: [
             {code: "Burjeel Brand", name: "Burjeel All Brands"},
             {code: "BHL1", name: "Burjeel Holdings"},
-            {code: "", name: "Burjeel Hospital"},
             {code: "BU10", name: "Burjeel Hospital Abu Dhabi"},
             {code: "", name: "Burjeel Al Ain"},
             {code: "BN01", name: "Burjeel Day Surgery Center Al Reem Island"},
@@ -22,13 +21,9 @@ document.addEventListener('DOMContentLoaded', function() {
             {code: "MC03", name: "Burjeel Medical Centre Al Zeina"},
             {code: "BN05", name: "Burjeel One Day Surgery Center Al Ain"},
             {code: "BN03", name: "Burjeel Day Surgery Centre Al Dhafra"},
-<<<<<<< HEAD
             {code: "BM08", name: "Burjeel by the Beach Saadiyat Island"},
             {code: "", name: "Burjeel Medical Centre, Al Falah"},
             {code: "", name: "Burjeel Medical Center, Dubai Silicon Oasis"}
-=======
-            {code: "BM08", name: "Burjeel by the Beach Saadiyat Island"}
->>>>>>> cde7eba (Update index.html and styles.css for improved layout and functionality; add dynamic dropdowns and new options in form. Remove Archive.zip and update .DS_Store. Enhance script.js with facility mapping and dynamic detail input handling.)
         ],
         LLH: [
             {code: "LLH Brand", name: "LLH All Brands"},
@@ -1050,15 +1045,19 @@ document.addEventListener('DOMContentLoaded', function() {
         <div class="form-group" id="multiSelectFacilityGroup" style="display: none;">
             <label for="multiSelectFacility">Facilities (Multiple Selection)</label>
             <div class="multi-select-dropdown">
-                <div class="multi-select-input">
-                    <div class="selected-items" id="selected-facilities"></div>
-                    <input type="text" id="facility-search" placeholder="Search facilities...">
+                <div class="multi-select-trigger" id="facility-trigger">
+                    <span class="trigger-placeholder" id="facility-trigger-text">Select facilities...</span>
                     <span class="dropdown-icon"><i class="fas fa-chevron-down"></i></span>
                 </div>
                 <div class="multi-select-options" id="facility-options">
+                    <div class="facility-search-wrap">
+                        <i class="fas fa-search facility-search-icon"></i>
+                        <input type="text" id="facility-search" placeholder="Search facilities...">
+                    </div>
                     <!-- Will be populated by JavaScript -->
                 </div>
             </div>
+            <div class="selected-items" id="selected-facilities"></div>
         </div>
         `;
         
@@ -1143,47 +1142,44 @@ document.addEventListener('DOMContentLoaded', function() {
         function setupMultiSelect() {
             // Get references to the elements
             const facilitySearch = document.getElementById('facility-search');
+            const facilityTrigger = document.getElementById('facility-trigger');
+            const facilityTriggerText = document.getElementById('facility-trigger-text');
             const facilityOptions = document.getElementById('facility-options');
             const selectedFacilities = document.getElementById('selected-facilities');
-            const multiSelectDropdown = facilitySearch.closest('.multi-select-dropdown');
-            
-            // Create a map to store all selected facilities across brands
-            // const selectedFacilityMap = new Map(); // This line is removed
-            
-            // ADD BACK: Toggle dropdown when clicking on input
-            facilitySearch.addEventListener('click', function(e) {
+            const multiSelectDropdown = facilityTrigger.closest('.multi-select-dropdown');
+
+            // Toggle dropdown when clicking on the trigger
+            facilityTrigger.addEventListener('click', function(e) {
                 e.stopPropagation();
                 multiSelectDropdown.classList.toggle('active');
-                
+
                 // Force populate options if empty
-                if (facilityOptions.children.length === 0 && brandSelect.value) {
+                if (facilityOptions.querySelectorAll('.checkbox-item').length === 0 && brandSelect.value) {
                     populateMultiSelectOptions(brandSelect.value);
                 }
+
+                // Focus search when opening
+                if (multiSelectDropdown.classList.contains('active')) {
+                    setTimeout(() => facilitySearch.focus(), 50);
+                }
             });
-            
+
+            // Prevent clicks inside options panel from closing
+            facilityOptions.addEventListener('click', function(e) {
+                e.stopPropagation();
+            });
+
             // Add search functionality to filter facilities
             facilitySearch.addEventListener('input', function() {
                 const searchTerm = this.value.toLowerCase();
                 const checkboxItems = facilityOptions.querySelectorAll('.checkbox-item');
-                let hasVisibleItems = false;
-                
+
                 checkboxItems.forEach(item => {
                     const label = item.querySelector('label span');
                     if (label) {
-                        const text = label.textContent.toLowerCase();
-                        if (text.includes(searchTerm)) {
-                            item.style.display = '';
-                            hasVisibleItems = true;
-                        } else {
-                            item.style.display = 'none';
-                        }
+                        item.style.display = label.textContent.toLowerCase().includes(searchTerm) ? '' : 'none';
                     }
                 });
-                
-                // Show dropdown if searching and results exist
-                if (!multiSelectDropdown.classList.contains('active') && hasVisibleItems && searchTerm) {
-                    multiSelectDropdown.classList.add('active');
-                }
             });
             
             // ADD BACK: Close dropdown when clicking outside
@@ -1351,11 +1347,18 @@ document.addEventListener('DOMContentLoaded', function() {
                         facilityCodeInput.value = '';
                     }
                 }
-                
-                // Update search input text
-                if (document.activeElement !== facilitySearch) {
-                    facilitySearch.value = '';
+
+                // Update trigger label
+                const triggerText = document.getElementById('facility-trigger-text');
+                if (triggerText) {
+                    const count = selectedFacilityMap.size;
+                    triggerText.textContent = count > 0 ? `${count} facilit${count === 1 ? 'y' : 'ies'} selected` : 'Select facilities...';
+                    triggerText.classList.toggle('has-selection', count > 0);
                 }
+
+                // Clear search input
+                facilitySearch.value = '';
+                facilityOptions.querySelectorAll('.checkbox-item').forEach(i => i.style.display = '');
             }
             
             // Update multi-select when brand changes - don't clear selections
