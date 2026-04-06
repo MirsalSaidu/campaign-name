@@ -606,6 +606,30 @@ document.addEventListener('DOMContentLoaded', function() {
     // Get reference to the new service name field
     const serviceNameInput = document.getElementById('serviceName');
 
+    // Abbreviate a facility name: acronym of main words + location after Al/Abu
+    function abbreviateFacilityName(name) {
+        const generic = new Set(['the', 'of', 'and', 'by', 'a', 'in', 'island', 'oasis', 'beach']);
+        const words = name.replace(/[,]/g, '').split(/\s+/);
+        let acronym = '';
+        let lastLocation = '';
+        for (let i = 0; i < words.length; i++) {
+            const w = words[i];
+            const lower = w.toLowerCase();
+            if (lower === 'abu' && i + 1 < words.length) {
+                // Keep "Abu Dhabi" together
+                lastLocation = 'Abu ' + words[i + 1];
+                i++;
+            } else if (lower === 'al' && i + 1 < words.length) {
+                // Keep "Al Reem", "Al Ain", etc.
+                lastLocation = words[i + 1];
+                i++;
+            } else if (!generic.has(lower) && w.length > 0) {
+                acronym += w[0].toUpperCase();
+            }
+        }
+        return lastLocation ? `${acronym} ${lastLocation}` : acronym;
+    }
+
     // Update the generate button to format Google Ads output correctly
     generateBtn.addEventListener('click', function() {
         // Get the active platform
@@ -618,25 +642,29 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
-        // Get facility codes
-        const facilityCodesRaw = facilityCodeInput.value; // Comma-separated from input
+        // Get facility codes (underscore-separated)
+        const facilityCodesRaw = facilityCodeInput.value;
         const facilityCodesUnderscore = facilityCodesRaw.replace(/,\s*/g, '_');
-        
-        // Create a better display name for facilities
-        // Instead of using "BH Abu Dhabi+2", use proper format like "BM10+4"
-        let facilityDisplayName;
-        if (selectedFacilities.length > 0) {
-            // Use the first facility code (not name) for display
-            facilityDisplayName = selectedFacilities[0].code;
-            if (selectedFacilities.length > 1) {
-                facilityDisplayName += `+${selectedFacilities.length - 1}`;
-            }
-        } else {
-            facilityDisplayName = "";
+
+        // Build facility segment: single → "CODE-ShortName", multiple → "CODE1_CODE2-CODE1+N"
+        let facilitySegment = '';
+        if (selectedFacilities.length === 1) {
+            const f = selectedFacilities[0];
+            const shortName = abbreviateFacilityName(f.name);
+            facilitySegment = `${f.code}-${shortName}`;
+        } else if (selectedFacilities.length > 1) {
+            // Only include facilities that have a code
+            const codedFacilities = selectedFacilities.filter(f => f.code);
+            const codes = codedFacilities.map(f => f.code).join('_');
+            const firstShort = abbreviateFacilityName(codedFacilities[0].name);
+            const extraCount = selectedFacilities.length - 1;
+            facilitySegment = `${codes}-${firstShort}+${extraCount}`;
         }
-        
+
         // Get other values
-        const month = monthSelect.value;
+        const monthRaw = monthSelect.value;
+        // Extract the 3-letter month code (before " - ") and uppercase it
+        const month = monthRaw ? monthRaw.split('-')[0].trim().toUpperCase() : '';
         const quarter = quarterSelect.value;
         const yearCode = yearSelect.value;
         const serviceName = serviceNameInput.value;
@@ -736,28 +764,11 @@ document.addEventListener('DOMContentLoaded', function() {
                         regionVal,
                         serviceName
                     ];
-                } else if (selectedFacilities.length === 1) {
-                    // Single facility format: CODE-SHORTCODE
-                    const singleFacilitySegment = `${facilityCodesUnderscore}-${facilityDisplayName}`;
-
-                    nameParts = [
-                        campaignType,
-                        singleFacilitySegment,
-                        month,
-                        fullYear,
-                        quarter,
-                        specialty,
-                        objective,
-                        regionVal,
-                        serviceName
-                    ];
                 } else {
-                    // Multiple facilities format: codes joined by '_' then '-' then display name
-                    const multiFacilitySegment = `${facilityCodesUnderscore}-${facilityDisplayName}`;
-
+                    // Single or multiple facilities
                     nameParts = [
                         campaignType,
-                        multiFacilitySegment,
+                        facilitySegment,
                         month,
                         fullYear,
                         quarter,
@@ -769,7 +780,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             } else {
                 if (isBrandLevel) {
-                    // Brand-level Google Ads format: ServiceName_Month_Year_Quarter_Specialty_Objective_Region_Brand-Name
                     nameParts = [
                         serviceName,
                         month,
@@ -781,17 +791,15 @@ document.addEventListener('DOMContentLoaded', function() {
                         brandSegment
                     ];
                 } else {
-                    // Regular Google Ads format with facility codes (underscore-separated)
                     nameParts = [
                         serviceName,
-                        facilityCodesUnderscore,
+                        facilitySegment,
                         month,
                         fullYear,
                         quarter,
                         specialty,
                         objective,
-                        regionVal,
-                        facilityDisplayName
+                        regionVal
                     ];
                 }
             }
@@ -835,8 +843,8 @@ document.addEventListener('DOMContentLoaded', function() {
         while (selectedFacilitiesEl && selectedFacilitiesEl.firstChild) {
             selectedFacilitiesEl.removeChild(selectedFacilitiesEl.firstChild);
         }
-        while (facilityOptionsEl && facilityOptionsEl.firstChild) {
-            facilityOptionsEl.removeChild(facilityOptionsEl.firstChild);
+        if (facilityOptionsEl) {
+            facilityOptionsEl.querySelectorAll('.checkbox-item').forEach(el => el.remove());
         }
         if (facilitySearchEl) facilitySearchEl.value = '';
         if (facilityTriggerText) {
@@ -1226,11 +1234,12 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Function to populate options - modified to maintain selections
             function populateMultiSelectOptions(brandValue) {
-                // Clear existing options in the dropdown
-                facilityOptions.innerHTML = '';
-                
+                // Remove only checkbox items, keep the search wrap
+                facilityOptions.querySelectorAll('.checkbox-item').forEach(el => el.remove());
+                // Clear search input and show all items
+                facilitySearch.value = '';
+
                 if (!brandValue || !facilities[brandValue]) {
-                    // Add a message if no brand or no facilities
                     const noOptions = document.createElement('div');
                     noOptions.className = 'checkbox-item';
                     noOptions.textContent = 'No facilities available. Please select a brand first.';
@@ -1336,13 +1345,10 @@ document.addEventListener('DOMContentLoaded', function() {
                         facilityCodes.push(facilityCode);
                     }
 
-                    // Skip rendering a tag if there's no display code
-                    if (!facilityCode) continue;
-
-                    // Create pill/tag for each selected facility
+                    // Always render a tag — use name when there's no code
                     const tag = document.createElement('div');
                     tag.className = 'selected-tag';
-                    tag.textContent = facilityCode;
+                    tag.textContent = facility.name;
                     
                     // Create remove button (×)
                     const removeBtn = document.createElement('span');
