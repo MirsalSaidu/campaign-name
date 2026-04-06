@@ -809,34 +809,61 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Update the reset function to include the service name field
     resetBtn.addEventListener('click', function() {
-        // Reset standard controls
-        [brandSelect, facilitySelect, monthSelect, yearSelect, quarterSelect, 
-         campaignTypeDropdown, objectiveSelect, regionSelect, serviceNameInput]
-        .forEach(element => { element.value = ''; });
+        // Reset all standard select/input controls
+        [brandSelect, facilitySelect, monthSelect, yearSelect, quarterSelect,
+         campaignTypeDropdown, objectiveSelect, regionSelect, serviceNameInput,
+         ctaSelect, variantSelect, serviceTypeSelect]
+        .forEach(element => { if (element) element.value = ''; });
 
-        specialtySearch.value = ''; 
-        specialtySelect.value = ''; 
+        // Reset specialty
+        specialtySearch.value = '';
+        specialtySelect.value = '';
+        // Uncheck all specialty checkboxes and remove selected styling
+        if (specialtyOptions) {
+            specialtyOptions.querySelectorAll('input[type="checkbox"]').forEach(cb => { cb.checked = false; });
+            specialtyOptions.querySelectorAll('li').forEach(li => { li.classList.remove('selected'); });
+        }
+
+        // Reset facility code
         facilityCodeInput.value = '';
-        
-        // Clear the facility multi-select
-        const selectedFacilities = document.getElementById('selected-facilities');
-        const facilityOptions = document.getElementById('facility-options');
-        const facilitySearch = document.getElementById('facility-search');
-        if (selectedFacilities) selectedFacilities.innerHTML = '';
-        if (facilityOptions) facilityOptions.innerHTML = '';
-        if (facilitySearch) facilitySearch.value = '';
-        
-        // IMPORTANT: Clear the global selectedFacilityMap
+
+        // Reset facility multi-select
+        const selectedFacilitiesEl = document.getElementById('selected-facilities');
+        const facilityOptionsEl = document.getElementById('facility-options');
+        const facilitySearchEl = document.getElementById('facility-search');
+        const facilityTriggerText = document.getElementById('facility-trigger-text');
+        while (selectedFacilitiesEl && selectedFacilitiesEl.firstChild) {
+            selectedFacilitiesEl.removeChild(selectedFacilitiesEl.firstChild);
+        }
+        while (facilityOptionsEl && facilityOptionsEl.firstChild) {
+            facilityOptionsEl.removeChild(facilityOptionsEl.firstChild);
+        }
+        if (facilitySearchEl) facilitySearchEl.value = '';
+        if (facilityTriggerText) {
+            facilityTriggerText.textContent = 'Select facilities...';
+            facilityTriggerText.classList.remove('has-selection');
+        }
+
+        // Clear the global selectedFacilityMap
         selectedFacilityMap.clear();
-        
-        facilitySelect.innerHTML = '<option value="">Select Facility</option>'; 
-        quarterSelect.value = ''; 
 
+        // Reset the standard facility select
+        while (facilitySelect.options.length > 0) facilitySelect.remove(0);
+        const defaultOption = document.createElement('option');
+        defaultOption.value = '';
+        defaultOption.textContent = 'Select Facility';
+        facilitySelect.appendChild(defaultOption);
+
+        // Reset dynamic detail field
+        if (dynamicDetailInput) dynamicDetailInput.value = '';
+        if (dynamicDetailGroup) dynamicDetailGroup.style.display = 'none';
+
+        // Hide result
         resultContainer.classList.remove('show');
-        closeAllDropdowns(); 
+        closeAllDropdowns();
 
-        document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
-        
+        document.querySelectorAll('.is-invalid').forEach(el => { el.classList.remove('is-invalid'); });
+
         // Reset the date auto-population flag
         dateAutoPopulated = false;
         setupAutoPopulateOnFirstInteraction();
