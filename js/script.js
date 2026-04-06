@@ -1309,10 +1309,13 @@ document.addEventListener('DOMContentLoaded', function() {
                         facilityCodes.push(facilityCode);
                     }
 
+                    // Skip rendering a tag if there's no display code
+                    if (!facilityCode) continue;
+
                     // Create pill/tag for each selected facility
                     const tag = document.createElement('div');
                     tag.className = 'selected-tag';
-                    tag.textContent = facility.code;
+                    tag.textContent = facilityCode;
                     
                     // Create remove button (×)
                     const removeBtn = document.createElement('span');
