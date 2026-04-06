@@ -7,7 +7,6 @@ document.addEventListener('DOMContentLoaded', function() {
         BUR: [
             {code: "Burjeel Brand", name: "Burjeel All Brands"},
             {code: "BHL1", name: "Burjeel Holdings"},
-            {code: "", name: "Burjeel Hospital"},
             {code: "BU10", name: "Burjeel Hospital Abu Dhabi"},
             {code: "", name: "Burjeel Al Ain"},
             {code: "BN01", name: "Burjeel Day Surgery Center Al Reem Island"},
@@ -22,7 +21,9 @@ document.addEventListener('DOMContentLoaded', function() {
             {code: "MC03", name: "Burjeel Medical Centre Al Zeina"},
             {code: "BN05", name: "Burjeel One Day Surgery Center Al Ain"},
             {code: "BN03", name: "Burjeel Day Surgery Centre Al Dhafra"},
-            {code: "BM08", name: "Burjeel by the Beach Saadiyat Island"}
+            {code: "BM08", name: "Burjeel by the Beach Saadiyat Island"},
+            {code: "", name: "Burjeel Medical Centre, Al Falah"},
+            {code: "", name: "Burjeel Medical Center, Dubai Silicon Oasis"}
         ],
         LLH: [
             {code: "LLH Brand", name: "LLH All Brands"},
@@ -495,7 +496,7 @@ document.addEventListener('DOMContentLoaded', function() {
             facilities[brandValue].forEach(facility => {
                 const option = document.createElement('option');
                 option.value = facility.code;
-                option.textContent = `${facility.code} - ${facility.name}`;
+                option.textContent = facility.name;
                 facilitySelect.appendChild(option);
             });
         }
@@ -617,21 +618,17 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
-        // Get facility codes
+        // Get facility codes (underscore-separated for use in name)
         const facilityCodesRaw = facilityCodeInput.value; // Comma-separated from input
         const facilityCodesUnderscore = facilityCodesRaw.replace(/,\s*/g, '_');
-        
-        // Create a better display name for facilities
-        // Instead of using "BH Abu Dhabi+2", use proper format like "BM10+4"
-        let facilityDisplayName;
+
+        // Display name uses facility NAME (not code) — first facility + "+N" if multiple
+        let facilityDisplayName = '';
         if (selectedFacilities.length > 0) {
-            // Use the first facility code (not name) for display
-            facilityDisplayName = selectedFacilities[0].code;
+            facilityDisplayName = selectedFacilities[0].name;
             if (selectedFacilities.length > 1) {
                 facilityDisplayName += `+${selectedFacilities.length - 1}`;
             }
-        } else {
-            facilityDisplayName = "";
         }
         
         // Get other values
@@ -735,36 +732,37 @@ document.addEventListener('DOMContentLoaded', function() {
                         regionVal,
                         serviceName
                     ];
-                } else if (selectedFacilities.length === 1) {
-                    // Single facility format: CODE-SHORTCODE
-                    const singleFacilitySegment = `${facilityCodesUnderscore}-${facilityDisplayName}`;
-
-                    nameParts = [
-                        campaignType,
-                        singleFacilitySegment,
-                        month,
-                        fullYear,
-                        quarter,
-                        specialty,
-                        objective,
-                        regionVal,
-                        serviceName
-                    ];
                 } else {
-                    // Multiple facilities format: codes joined by '_' then '-' then display name
-                    const multiFacilitySegment = `${facilityCodesUnderscore}-${facilityDisplayName}`;
-
-                    nameParts = [
-                        campaignType,
-                        multiFacilitySegment,
-                        month,
-                        fullYear,
-                        quarter,
-                        specialty,
-                        objective,
-                        regionVal,
-                        serviceName
-                    ];
+                    // Single or multiple facilities
+                    let facilitySegment;
+                    if (facilityCodesUnderscore) {
+                        // Code(s) available: CODE-FacilityName (campaignType stays separate)
+                        facilitySegment = `${facilityCodesUnderscore}-${facilityDisplayName}`;
+                        nameParts = [
+                            campaignType,
+                            facilitySegment,
+                            month,
+                            fullYear,
+                            quarter,
+                            specialty,
+                            objective,
+                            regionVal,
+                            serviceName
+                        ];
+                    } else {
+                        // No code: merge campaignType and facility name with dash
+                        facilitySegment = `${campaignType}-${facilityDisplayName}`;
+                        nameParts = [
+                            facilitySegment,
+                            month,
+                            fullYear,
+                            quarter,
+                            specialty,
+                            objective,
+                            regionVal,
+                            serviceName
+                        ];
+                    }
                 }
             } else {
                 if (isBrandLevel) {
@@ -780,17 +778,19 @@ document.addEventListener('DOMContentLoaded', function() {
                         brandSegment
                     ];
                 } else {
-                    // Regular Google Ads format with facility codes (underscore-separated)
+                    // Regular Google Ads format: ServiceName_CODE-FacilityName_Month_...
+                    const facilitySegment = facilityCodesUnderscore
+                        ? `${facilityCodesUnderscore}-${facilityDisplayName}`
+                        : facilityDisplayName;
                     nameParts = [
                         serviceName,
-                        facilityCodesUnderscore,
+                        facilitySegment,
                         month,
                         fullYear,
                         quarter,
                         specialty,
                         objective,
-                        regionVal,
-                        facilityDisplayName
+                        regionVal
                     ];
                 }
             }
@@ -827,8 +827,25 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // IMPORTANT: Clear the global selectedFacilityMap
         selectedFacilityMap.clear();
-        
-        facilitySelect.innerHTML = '<option value="">Select Facility</option>'; 
+
+        // Reset sidebar
+        const countBadge = document.getElementById('facility-count');
+        if (countBadge) countBadge.textContent = '0';
+        const sidebarList = document.getElementById('selected-facilities');
+        if (sidebarList) {
+            sidebarList.innerHTML = '';
+            const emptyDiv = document.createElement('div');
+            emptyDiv.className = 'sidebar-empty';
+            const icon = document.createElement('i');
+            icon.className = 'fas fa-clinic-medical';
+            const p = document.createElement('p');
+            p.textContent = 'No facilities selected yet';
+            emptyDiv.appendChild(icon);
+            emptyDiv.appendChild(p);
+            sidebarList.appendChild(emptyDiv);
+        }
+
+        facilitySelect.innerHTML = '<option value="">Select Facility</option>';
         quarterSelect.value = ''; 
 
         resultContainer.classList.remove('show');
@@ -1051,9 +1068,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div class="multi-select-options" id="facility-options">
                     <!-- Will be populated by JavaScript -->
                 </div>
-                <div class="selected-items" id="selected-facilities">
-                    <!-- Selected items will appear here -->
-                </div>
             </div>
         </div>
         `;
@@ -1222,7 +1236,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     checkboxItem.innerHTML = `
                         <label>
                             <input type="checkbox" value="${facility.code}" data-name="${facility.name}" data-brand="${brandValue}" ${isSelected ? 'checked' : ''}>
-                            <span>${facility.code} - ${facility.name}</span>
+                            <span>${facility.name}</span>
                         </label>
                     `;
                     
@@ -1290,103 +1304,77 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.head.appendChild(dropdownStyle);
             }
             
-            // Update selected facilities display based on the map
+            // Update selected facilities display in the sidebar
             function updateSelectedFacilities() {
-                selectedFacilities.innerHTML = '';
+                const sidebarList = document.getElementById('selected-facilities');
+                const countBadge = document.getElementById('facility-count');
                 let facilityCodes = [];
-                
-                // Use the map to create selected facility tags
-                for (const [code, facility] of selectedFacilityMap.entries()) {
-                    // Resolve the matching facility code more robustly
-                    let facilityCode = '';
 
-                    // 1) Exact key match with facility.code (e.g., "BMC Saadiyat")
-                    if (facilityCodeMapping[facility.code]) {
-                        facilityCode = facilityCodeMapping[facility.code];
-                    }
+                if (!sidebarList) return;
+                sidebarList.innerHTML = '';
 
-                    // 2) Exact key match with facility.name
-                    if (!facilityCode && facilityCodeMapping[facility.name]) {
-                        facilityCode = facilityCodeMapping[facility.name];
-                    }
-
-                    // 3) Case-insensitive exact match
-                    if (!facilityCode) {
-                        const nameLower = facility.name.toLowerCase();
-                        const codeLower = facility.code.toLowerCase();
-                        for (const key in facilityCodeMapping) {
-                            const keyLower = key.toLowerCase();
-                            if (keyLower === nameLower || keyLower === codeLower) {
-                                facilityCode = facilityCodeMapping[key];
-                                break;
-                            }
+                if (selectedFacilityMap.size === 0) {
+                    const emptyDiv = document.createElement('div');
+                    emptyDiv.className = 'sidebar-empty';
+                    const icon = document.createElement('i');
+                    icon.className = 'fas fa-clinic-medical';
+                    const p = document.createElement('p');
+                    p.textContent = 'No facilities selected yet';
+                    emptyDiv.appendChild(icon);
+                    emptyDiv.appendChild(p);
+                    sidebarList.appendChild(emptyDiv);
+                    if (countBadge) countBadge.textContent = '0';
+                } else {
+                    for (const [code, facility] of selectedFacilityMap.entries()) {
+                        let facilityCode = facility.code || '';
+                        if (!facilityCode && facilityCodeMapping[facility.name]) {
+                            facilityCode = facilityCodeMapping[facility.name];
                         }
+                        if (facilityCode) facilityCodes.push(facilityCode);
+
+                        const item = document.createElement('div');
+                        item.className = 'sidebar-facility-item';
+
+                        const info = document.createElement('div');
+                        info.className = 'sidebar-facility-info';
+
+                        const nameSpan = document.createElement('span');
+                        nameSpan.className = 'sidebar-facility-name';
+                        nameSpan.textContent = facility.name;
+                        info.appendChild(nameSpan);
+
+                        if (facilityCode) {
+                            const codeSpan = document.createElement('span');
+                            codeSpan.className = 'sidebar-facility-code';
+                            codeSpan.textContent = facilityCode;
+                            info.appendChild(codeSpan);
+                        }
+
+                        const removeBtn = document.createElement('button');
+                        removeBtn.className = 'sidebar-remove-btn';
+                        removeBtn.title = 'Remove';
+                        removeBtn.textContent = '\u00D7';
+                        removeBtn.addEventListener('click', function(e) {
+                            e.stopPropagation();
+                            selectedFacilityMap.delete(code);
+                            const checkbox = facilityOptions.querySelector(`input[value="${code}"]`);
+                            if (checkbox) checkbox.checked = false;
+                            updateSelectedFacilities();
+                        });
+
+                        item.appendChild(info);
+                        item.appendChild(removeBtn);
+                        sidebarList.appendChild(item);
                     }
 
-                    // 4) Longest partial match fallback (avoids generic short keys like "BMC" winning)
-                    if (!facilityCode) {
-                        let bestKey = '';
-                        for (const key in facilityCodeMapping) {
-                            if (
-                                facility.name.includes(key) ||
-                                key.includes(facility.name) ||
-                                facility.code.includes(key) ||
-                                key.includes(facility.code)
-                            ) {
-                                if (key.length > bestKey.length) {
-                                    bestKey = key;
-                                }
-                            }
-                        }
-                        if (bestKey) {
-                            facilityCode = facilityCodeMapping[bestKey];
-                        }
-                    }
-
-                    if (facilityCode) {
-                        facilityCodes.push(facilityCode);
-                    }
-
-                    // Create pill/tag for each selected facility
-                    const tag = document.createElement('div');
-                    tag.className = 'selected-tag';
-                    tag.textContent = facility.code;
-                    
-                    // Create remove button (×)
-                    const removeBtn = document.createElement('span');
-                    removeBtn.className = 'remove-tag';
-                    removeBtn.innerHTML = ' &times;';
-                    removeBtn.addEventListener('click', function(e) {
-                        e.stopPropagation();
-                        
-                        // Remove from map
-                        selectedFacilityMap.delete(code);
-                        
-                        // Find and uncheck corresponding checkbox if visible
-                        const checkbox = facilityOptions.querySelector(`input[value="${code}"]`);
-                        if (checkbox) {
-                            checkbox.checked = false;
-                        }
-                        
-                        // Update UI
-                        updateSelectedFacilities();
-                    });
-                    
-                    tag.appendChild(removeBtn);
-                    selectedFacilities.appendChild(tag);
+                    if (countBadge) countBadge.textContent = selectedFacilityMap.size;
                 }
-                
-                // Update the facility code input with comma-separated codes
+
                 const facilityCodeInput = document.getElementById('facilityCode');
                 if (facilityCodeInput) {
-                    if (facilityCodes.length > 0) {
-                        facilityCodeInput.value = facilityCodes.join(', ');
-                    } else {
-                        facilityCodeInput.value = '';
-                    }
+                    facilityCodeInput.value = facilityCodes.join(', ');
                 }
-                
-                // Update search input text
+
                 if (document.activeElement !== facilitySearch) {
                     facilitySearch.value = '';
                 }

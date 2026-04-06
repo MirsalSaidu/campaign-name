@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
 </head>
 <body>
+<div class="page-layout">
     <div class="container">
         <div class="header animate__animated animate__fadeIn">
             <h1><i class="fas fa-hospital-user"></i> Campaign Name Generator</h1>
@@ -188,4 +189,23 @@
 
     <script src="js/script.js"></script>
 </body>
+
+    <!-- Sidebar -->
+    <aside class="selection-sidebar">
+        <div class="sidebar-header">
+            <i class="fas fa-hospital-user"></i>
+            <h3>Selected Facilities</h3>
+            <span class="sidebar-count" id="facility-count">0</span>
+        </div>
+        <div class="sidebar-body">
+            <div id="selected-facilities" class="sidebar-facility-list">
+                <div class="sidebar-empty">
+                    <i class="fas fa-clinic-medical"></i>
+                    <p>No facilities selected yet</p>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+</div><!-- /.page-layout -->
 </html>
