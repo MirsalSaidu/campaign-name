@@ -21,6 +21,7 @@ document.addEventListener('DOMContentLoaded', function() {
             {code: "MC03", name: "Burjeel Medical Centre Al Zeina"},
             {code: "BN05", name: "Burjeel One Day Surgery Center Al Ain"},
             {code: "BN03", name: "Burjeel Day Surgery Centre Al Dhafra"},
+            {code: "", name: "Burjeel Day Surgery Centre Al Dhahir"},
             {code: "BM08", name: "Burjeel by the Beach Saadiyat Island"},
             {code: "", name: "Burjeel Medical Centre, Al Falah"},
             {code: "", name: "Burjeel Medical Center, Dubai Silicon Oasis"}
@@ -209,6 +210,8 @@ document.addEventListener('DOMContentLoaded', function() {
         "BDSC Barari": "BN05",
         "Burjeel Day Surgery Centre Al Dhafra": "BN03",
         "BDSC Dhafra": "BN03",
+        "Burjeel Day Surgery Centre Al Dhahir": "",
+        "BDSC Al Dhahir": "",
         "Burjeel by the Beach Clinic Saadiyat Island": "BM08",
         "BMC Saadiyat": "BM08",
         "Medeor Hospital Abu Dhabi": "MH01",
@@ -606,6 +609,27 @@ document.addEventListener('DOMContentLoaded', function() {
     // Get reference to the new service name field
     const serviceNameInput = document.getElementById('serviceName');
 
+    function abbreviateFacilityName(name) {
+        const generic = new Set(['the', 'of', 'and', 'by', 'a', 'in', 'island', 'oasis', 'beach']);
+        const words = name.replace(/[,]/g, '').split(/\s+/);
+        let acronym = '';
+        let lastLocation = '';
+        for (let i = 0; i < words.length; i++) {
+            const w = words[i];
+            const lower = w.toLowerCase();
+            if (lower === 'abu' && i + 1 < words.length) {
+                lastLocation = 'Abu ' + words[i + 1];
+                i++;
+            } else if (lower === 'al' && i + 1 < words.length) {
+                lastLocation = 'Al ' + words[i + 1];
+                i++;
+            } else if (!generic.has(lower) && w.length > 0) {
+                acronym += w[0].toUpperCase();
+            }
+        }
+        return lastLocation ? `${acronym} ${lastLocation}` : acronym;
+    }
+
     // Update the generate button to format Google Ads output correctly
     generateBtn.addEventListener('click', function() {
         // Get the active platform
@@ -625,7 +649,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Display name uses facility NAME (not code) — first facility + "+N" if multiple
         let facilityDisplayName = '';
         if (selectedFacilities.length > 0) {
-            facilityDisplayName = selectedFacilities[0].name;
+            facilityDisplayName = abbreviateFacilityName(selectedFacilities[0].name);
             if (selectedFacilities.length > 1) {
                 facilityDisplayName += `+${selectedFacilities.length - 1}`;
             }
